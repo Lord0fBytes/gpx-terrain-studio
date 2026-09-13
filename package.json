@@ -12,7 +12,7 @@
     "dev:web": "vite",
     "build": "tsc --noEmit && vite build",
     "start": "tsx src/server/index.ts",
-    "test": "tsx --test src/server/index.test.ts"
+    "test": "tsx --test src/server/index.test.ts src/core/*.test.ts"
   },
   "dependencies": {
     "react": "^19.1.1",
