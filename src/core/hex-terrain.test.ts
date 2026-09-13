@@ -41,6 +41,21 @@ test('preserves terrain relief while keeping the hexagonal base flat', () => {
   assert.ok(bounds.max.z > 2);
 });
 
+test('integrates raised route offsets into the same watertight terrain mesh', () => {
+  const mesh = buildHexTerrainSolid({
+    widthMm: 40,
+    columns: 4,
+    rows: 4,
+    elevationsM: Array.from({ length: 16 }, () => 100),
+    baseThicknessMm: 3,
+    elevationToModelMm: (elevation) => elevation,
+    surfaceOffsetMm: ({ y }) => Math.abs(y) < 1 ? 1 : 0
+  });
+  assert.equal(meshBounds(mesh).max.z, 4);
+  assert.equal(analyzeMesh(mesh).boundaryEdges, 0);
+  assert.equal(analyzeMesh(mesh).connectedComponents, 1);
+});
+
 test('uses the full limiting DEM grid edge for hex surface detail', () => {
   const mesh = buildHexTerrainSolid({
     widthMm: 40,

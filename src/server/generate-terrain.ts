@@ -1,7 +1,9 @@
 import { elevationToModelMm, derivePrintScale } from '../core/print-scale';
-import { createLocalProjection } from '../core/projection';
 import { encodeBinaryStl } from '../core/stl';
 import { buildHexTerrainSolid } from '../core/hex-terrain';
+import { regularFlatTopHexagon } from '../core/hex-footprint';
+import { createLocalProjection } from '../core/projection';
+import { createRaisedRouteOffset, type ModelRouteSegment } from '../core/route';
 import { applyLightTerrainSmoothing, type TerrainSmoothing } from '../core/smoothing';
 import type { DemGrid, DemSampleRequest, GeographicBounds } from './elevation/opentopography';
 
@@ -10,6 +12,11 @@ export interface TerrainGenerationRequest extends DemSampleRequest {
   readonly baseThicknessMm: number;
   readonly verticalExaggeration: number;
   readonly smoothing?: TerrainSmoothing;
+  readonly raisedRoute?: Readonly<{
+    widthMm: number;
+    heightMm: number;
+    segments: readonly Readonly<{ points: readonly Readonly<{ latitude: number; longitude: number }>[] }> [];
+  }>;
 }
 
 export interface TerrainGenerationResult {
@@ -17,6 +24,8 @@ export interface TerrainGenerationResult {
   readonly printedWidthMm: number;
   readonly printedDepthMm: number;
   readonly triangleCount: number;
+  readonly clippedRouteSegments: number;
+  readonly omittedRouteSegments: number;
 }
 
 export interface ElevationSampler {
@@ -30,6 +39,31 @@ function selectionDimensionsM(bounds: GeographicBounds): Readonly<{ widthM: numb
   const southeast = projection.project({ latitude: bounds.south, longitude: bounds.east });
   const northwest = projection.project({ latitude: bounds.north, longitude: bounds.west });
   return { widthM: Math.abs(southeast.x - southwest.x), depthM: Math.abs(northwest.y - southwest.y) };
+}
+
+function raisedRouteOffset(request: TerrainGenerationRequest, widthM: number): Readonly<{ offsetAt(point: Readonly<{ x: number; y: number }>): number; clippedSegmentCount: number; omittedSegmentCount: number }> | undefined {
+  const route = request.raisedRoute;
+  if (!route) return undefined;
+  if (!Number.isFinite(route.widthMm) || route.widthMm <= 0 || !Number.isFinite(route.heightMm) || route.heightMm <= 0) {
+    throw new Error('Raised route width and height must be finite positive numbers.');
+  }
+  const minimumWidthMm = (request.printedWidthMm / widthM) * 2;
+  if (route.widthMm < minimumWidthMm) {
+    throw new Error(`Raised route width must be at least ${minimumWidthMm.toFixed(2)} mm for the current terrain resolution.`);
+  }
+  if (!Array.isArray(route.segments) || route.segments.length === 0) throw new Error('Raised route requires at least one GPX segment.');
+  const center = { latitude: (request.bounds.south + request.bounds.north) / 2, longitude: (request.bounds.west + request.bounds.east) / 2 };
+  const projection = createLocalProjection(center);
+  const scaleMmPerM = request.printedWidthMm / widthM;
+  const segments: ModelRouteSegment[] = route.segments.map((segment) => {
+    if (!Array.isArray(segment.points) || segment.points.length < 2) throw new Error('Each raised route segment requires at least two points.');
+    return { points: segment.points.map((point: Readonly<{ latitude: number; longitude: number }>) => {
+      if (!Number.isFinite(point.latitude) || !Number.isFinite(point.longitude)) throw new Error('Raised route contains invalid coordinates.');
+      const local = projection.project(point);
+      return { x: local.x * scaleMmPerM, y: local.y * scaleMmPerM };
+    }) };
+  });
+  return createRaisedRouteOffset(segments, route, regularFlatTopHexagon(request.printedWidthMm));
 }
 
 /** Fetches a DEM and returns the same validated millimeter mesh that is encoded into the STL response. */
@@ -49,6 +83,7 @@ export async function generateTerrainStl(
   const elevationsM = request.smoothing === 'light'
     ? applyLightTerrainSmoothing(dem.elevationsM, dem.columns, dem.rows)
     : dem.elevationsM;
+  const routeOffset = raisedRouteOffset(request, widthM);
   const datumM = Math.min(...elevationsM);
   const mesh = buildHexTerrainSolid({
     widthMm: printScale.printedWidthMm,
@@ -61,12 +96,15 @@ export async function generateTerrainStl(
       datumM,
       printScale.horizontalModelScaleMmPerM,
       request.verticalExaggeration
-    )
+    ),
+    surfaceOffsetMm: routeOffset?.offsetAt
   });
   return {
     stl: encodeBinaryStl(mesh),
     printedWidthMm: printScale.printedWidthMm,
     printedDepthMm: printScale.printedWidthMm * Math.sqrt(3) / 2,
-    triangleCount: mesh.indices.length / 3
+    triangleCount: mesh.indices.length / 3,
+    clippedRouteSegments: routeOffset?.clippedSegmentCount ?? 0,
+    omittedRouteSegments: routeOffset?.omittedSegmentCount ?? 0
   };
 }

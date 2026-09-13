@@ -15,6 +15,7 @@ The Obsidian project note is the source of truth for current scope, decisions, n
 - The terrain-only export form intentionally requires the owner to enter printed width, base thickness, and vertical exaggeration. No unapproved physical defaults are silently applied.
 - Source GeoTIFF elevations are resampled bilinearly into the bounded export grid. This removes nearest-neighbor DEM-cell terraces without adding a terrain blur; it interpolates between measured cells but does not claim additional source detail.
 - The export form exposes one opt-in **Light smoothing** checkbox. It performs exactly one 3×3 mean pass after bilinear resampling and before vertical scaling; the unchecked default remains bilinear-only terrain.
+- Raised routes use an original height-field offset over the same terrain mesh, not a separate shell. GPX segments are projected into the shared local model coordinates, clipped to the regular hexagon, and retain their gaps. Width and rise are required explicit inputs; the server rejects a width too narrow for the current DEM grid. Recessed routes remain pending.
 - `fast-xml-parser` is the approved GPX XML dependency (MIT; reviewed 2026-09-13). It is used for syntax validation and structured parsing rather than a hand-written regular-expression parser. [License](https://github.com/NaturalIntelligence/fast-xml-parser/blob/master/LICENSE)
 - Leaflet is selected as the prototype map library (BSD-2-Clause; reviewed 2026-09-13). [License/FAQ](https://github.com/Leaflet/Leaflet/blob/main/FAQ.md)
 

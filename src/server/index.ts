@@ -71,7 +71,8 @@ export async function handleRequest(request: IncomingMessage, response: ServerRe
         'content-disposition': 'attachment; filename="terrain.stl"',
         'x-model-width-mm': String(result.printedWidthMm),
         'x-model-depth-mm': String(result.printedDepthMm),
-        'x-triangle-count': String(result.triangleCount)
+        'x-triangle-count': String(result.triangleCount),
+        'x-route-segments-omitted': String(result.omittedRouteSegments)
       });
       response.end(result.stl);
     } catch (error) {

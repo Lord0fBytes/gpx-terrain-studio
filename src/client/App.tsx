@@ -23,6 +23,9 @@ export function App() {
   const [baseThicknessMm, setBaseThicknessMm] = useState('');
   const [verticalExaggeration, setVerticalExaggeration] = useState('');
   const [useLightSmoothing, setUseLightSmoothing] = useState(false);
+  const [includeRaisedRoute, setIncludeRaisedRoute] = useState(false);
+  const [routeWidthMm, setRouteWidthMm] = useState('');
+  const [routeHeightMm, setRouteHeightMm] = useState('');
   const [exportMessage, setExportMessage] = useState('Enter the intended physical dimensions to generate a terrain-only STL.');
   const [isGenerating, setIsGenerating] = useState(false);
   const selection = summary && deriveRouteSelection(summary.segments, {
@@ -63,6 +66,11 @@ export function App() {
       setExportMessage('Printed width, base thickness, and vertical exaggeration must all be positive numbers.');
       return;
     }
+    const raisedRoute = includeRaisedRoute ? { widthMm: Number(routeWidthMm), heightMm: Number(routeHeightMm), segments: summary?.segments ?? [] } : undefined;
+    if (raisedRoute && (!Number.isFinite(raisedRoute.widthMm) || raisedRoute.widthMm <= 0 || !Number.isFinite(raisedRoute.heightMm) || raisedRoute.heightMm <= 0)) {
+      setExportMessage('Raised route width and height must both be positive numbers.');
+      return;
+    }
     setIsGenerating(true);
     setExportMessage('Fetching elevation and generating the watertight STL…');
     try {
@@ -75,6 +83,7 @@ export function App() {
           rows: 96,
           dataset: 'COP30',
           smoothing: useLightSmoothing ? 'light' : 'raw',
+          raisedRoute,
           ...dimensions
         })
       });
@@ -91,7 +100,8 @@ export function App() {
       URL.revokeObjectURL(downloadUrl);
       const depthMm = response.headers.get('x-model-depth-mm');
       const triangles = response.headers.get('x-triangle-count');
-      setExportMessage(`Downloaded terrain-only STL: ${dimensions.printedWidthMm} mm wide${depthMm ? ` × ${Number(depthMm).toFixed(1)} mm deep` : ''}${triangles ? `, ${triangles} triangles` : ''}.`);
+      const omittedRouteSegments = Number(response.headers.get('x-route-segments-omitted') ?? '0');
+      setExportMessage(`Downloaded ${includeRaisedRoute ? 'raised-route' : 'terrain-only'} STL: ${dimensions.printedWidthMm} mm wide${depthMm ? ` × ${Number(depthMm).toFixed(1)} mm deep` : ''}${triangles ? `, ${triangles} triangles` : ''}.${omittedRouteSegments > 0 ? ` ${omittedRouteSegments} route segment${omittedRouteSegments === 1 ? '' : 's'} fell outside the hexagon.` : ''}`);
     } catch (error) {
       setExportMessage(error instanceof Error ? error.message : 'Unable to generate terrain.');
     } finally {
@@ -139,6 +149,15 @@ export function App() {
                   <input checked={useLightSmoothing} onChange={(event) => setUseLightSmoothing(event.target.checked)} type="checkbox" />
                   <span><strong>Light smoothing</strong><small>Softens DEM-cell terraces with one conservative pass. Leave off for bilinear-only terrain.</small></span>
                 </label>
+                <label className="smoothing-option">
+                  <input checked={includeRaisedRoute} onChange={(event) => setIncludeRaisedRoute(event.target.checked)} type="checkbox" />
+                  <span><strong>Include raised route</strong><small>Integrates the uploaded GPX route into the terrain solid. Route settings are required when enabled.</small></span>
+                </label>
+                {includeRaisedRoute && <div className="route-settings">
+                  <label>Route width (mm)<input value={routeWidthMm} onChange={(event) => setRouteWidthMm(event.target.value)} inputMode="decimal" min="0.01" required step="any" type="number" /></label>
+                  <label>Route rise (mm)<input value={routeHeightMm} onChange={(event) => setRouteHeightMm(event.target.value)} inputMode="decimal" min="0.01" required step="any" type="number" /></label>
+                  <p>Use values appropriate for your printer; no printable-detail defaults have been approved yet.</p>
+                </div>}
                 <button disabled={isGenerating} type="submit">{isGenerating ? 'Generating STL…' : 'Generate & download STL'}</button>
               </form>
               <p aria-live="polite" className="status">{exportMessage}</p>

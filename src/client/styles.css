@@ -42,9 +42,11 @@ h2 { font-size: 1rem; letter-spacing: .08em; margin-top: 76px; text-transform: u
 .smoothing-option input { block-size: 20px; flex: 0 0 20px; inline-size: 20px; margin: 0; }
 .smoothing-option span { display: grid; gap: 2px; }
 .smoothing-option small { color: #507065; font-size: .8rem; }
+.route-settings { display: grid; gap: 16px; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.route-settings p { color: #507065; font-size: .8rem; grid-column: 1 / -1; line-height: 1.4; margin: -4px 0 0; }
 .export-form button { background: #d86f3d; border: 0; color: #fff; cursor: pointer; font: 800 .9rem/1 Inter, ui-sans-serif, system-ui, sans-serif; grid-column: 1 / -1; min-height: 52px; padding: 14px; text-transform: uppercase; letter-spacing: .06em; }
 .export-form button:disabled { cursor: progress; opacity: .65; }
 .export-form input:focus-visible, .export-form button:focus-visible { outline: 3px solid #1e3a5f; outline-offset: 3px; }
-@media (max-width: 520px) { .summary { gap: 16px; } .route-map { min-height: 280px; } .export-form { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { .summary { gap: 16px; } .route-map { min-height: 280px; } .export-form, .route-settings { grid-template-columns: 1fr; } }
 .notice { background: #dce7dc; border-radius: 6px; line-height: 1.55; margin-top: 52px; padding: 20px 22px; }
 .notice strong { display: block; }

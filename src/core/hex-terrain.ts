@@ -1,4 +1,5 @@
 import { assertPrintableSolid, type IndexedMesh, type Vec3 } from './mesh';
+import { regularFlatTopHexagon } from './hex-footprint';
 
 export interface HexTerrainInput {
   readonly widthMm: number;
@@ -8,6 +9,7 @@ export interface HexTerrainInput {
   readonly elevationsM: readonly number[];
   readonly baseThicknessMm: number;
   readonly elevationToModelMm: (elevationM: number) => number;
+  readonly surfaceOffsetMm?: (point: Readonly<{ x: number; y: number }>) => number;
 }
 
 function finitePositive(value: number, label: string): void {
@@ -63,11 +65,7 @@ export function buildHexTerrainSolid(input: HexTerrainInput): IndexedMesh {
     (a.x * i + b.x * j) / subdivisions,
     (a.y * i + b.y * j) / subdivisions
   );
-  const corners: Vec3[] = Array.from({ length: 6 }, (_, index) => ({
-    x: circumradiusMm * Math.cos((index * Math.PI) / 3),
-    y: circumradiusMm * Math.sin((index * Math.PI) / 3),
-    z: 0
-  }));
+  const corners: Vec3[] = regularFlatTopHexagon(input.widthMm).map((point) => ({ ...point, z: 0 }));
 
   for (let sector = 0; sector < 6; sector += 1) {
     const a = corners[sector];
@@ -83,11 +81,11 @@ export function buildHexTerrainSolid(input: HexTerrainInput): IndexedMesh {
   }
 
   const minimumElevationMm = Math.min(...vertices.map((vertex) => vertex.elevationMm));
-  const positions: Vec3[] = vertices.map((vertex) => ({
-    x: vertex.x,
-    y: vertex.y,
-    z: input.baseThicknessMm + vertex.elevationMm - minimumElevationMm
-  }));
+  const positions: Vec3[] = vertices.map((vertex) => {
+    const offset = input.surfaceOffsetMm?.(vertex) ?? 0;
+    if (!Number.isFinite(offset) || offset < 0) throw new Error('surfaceOffsetMm must return finite non-negative offsets.');
+    return { x: vertex.x, y: vertex.y, z: input.baseThicknessMm + vertex.elevationMm - minimumElevationMm + offset };
+  });
   const topTriangleIndices = [...indices];
   const bottomOffset = positions.length;
   positions.push(...vertices.map((vertex) => ({ x: vertex.x, y: vertex.y, z: 0 })));
