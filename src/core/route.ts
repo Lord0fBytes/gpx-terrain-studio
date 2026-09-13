@@ -7,6 +7,8 @@ export interface ModelRouteSegment {
 export interface RaisedRouteSettings {
   readonly widthMm: number;
   readonly heightMm: number;
+  /** Smooth transition contained within the selected route width. */
+  readonly edgeTransitionMm?: number;
 }
 
 function cross(a: PlanarPoint, b: PlanarPoint, point: PlanarPoint): number {
@@ -57,6 +59,8 @@ export function createRaisedRouteOffset(
   if (!Number.isFinite(settings.widthMm) || settings.widthMm <= 0 || !Number.isFinite(settings.heightMm) || settings.heightMm <= 0) {
     throw new Error('Raised route width and height must be finite positive numbers.');
   }
+  const edgeTransitionMm = Math.min(settings.edgeTransitionMm ?? 0, settings.widthMm / 4);
+  if (!Number.isFinite(edgeTransitionMm) || edgeTransitionMm < 0) throw new Error('Raised route edge transition must be finite and non-negative.');
   let totalSegmentCount = 0;
   const clippedSegments = segments.flatMap((segment) => segment.points.slice(1).flatMap((to, index) => {
     totalSegmentCount += 1;
@@ -68,9 +72,11 @@ export function createRaisedRouteOffset(
     clippedSegmentCount: clippedSegments.length,
     omittedSegmentCount: totalSegmentCount - clippedSegments.length,
     offsetAt(point) {
-      return clippedSegments.some(([from, to]) => distanceToSegment(point, from, to) <= settings.widthMm / 2)
-        ? settings.heightMm
-        : 0;
+      const distance = Math.min(...clippedSegments.map(([from, to]) => distanceToSegment(point, from, to)));
+      const radius = settings.widthMm / 2;
+      if (distance > radius) return 0;
+      if (edgeTransitionMm === 0 || distance <= radius - edgeTransitionMm) return settings.heightMm;
+      return settings.heightMm * (radius - distance) / edgeTransitionMm;
     }
   };
 }

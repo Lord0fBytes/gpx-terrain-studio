@@ -13,8 +13,9 @@ test('clips an edge-crossing route segment to the shared hexagonal footprint', (
 });
 
 test('raises only clipped route segments and never bridges GPX gaps', () => {
-  const offset = createRaisedRouteOffset([{ points: [{ x: -30, y: 0 }, { x: 30, y: 0 }] }], { widthMm: 4, heightMm: 1 }, regularFlatTopHexagon(40));
+  const offset = createRaisedRouteOffset([{ points: [{ x: -30, y: 0 }, { x: 30, y: 0 }] }], { widthMm: 4, heightMm: 1, edgeTransitionMm: 1 }, regularFlatTopHexagon(40));
   assert.equal(offset.offsetAt({ x: 0, y: 0 }), 1);
+  assert.equal(offset.offsetAt({ x: 0, y: 1.5 }), 0.5);
   assert.equal(offset.offsetAt({ x: 0, y: 3 }), 0);
   assert.equal(offset.clippedSegmentCount, 1);
   assert.equal(offset.omittedSegmentCount, 0);

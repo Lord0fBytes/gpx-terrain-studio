@@ -47,7 +47,8 @@ function raisedRouteOffset(request: TerrainGenerationRequest, widthM: number): R
   if (!Number.isFinite(route.widthMm) || route.widthMm <= 0 || !Number.isFinite(route.heightMm) || route.heightMm <= 0) {
     throw new Error('Raised route width and height must be finite positive numbers.');
   }
-  const minimumWidthMm = (request.printedWidthMm / widthM) * 2;
+  const terrainStepMm = request.printedWidthMm / (Math.min(request.columns, request.rows) - 1);
+  const minimumWidthMm = terrainStepMm * 2;
   if (route.widthMm < minimumWidthMm) {
     throw new Error(`Raised route width must be at least ${minimumWidthMm.toFixed(2)} mm for the current terrain resolution.`);
   }
@@ -63,7 +64,7 @@ function raisedRouteOffset(request: TerrainGenerationRequest, widthM: number): R
       return { x: local.x * scaleMmPerM, y: local.y * scaleMmPerM };
     }) };
   });
-  return createRaisedRouteOffset(segments, route, regularFlatTopHexagon(request.printedWidthMm));
+  return createRaisedRouteOffset(segments, { ...route, edgeTransitionMm: terrainStepMm }, regularFlatTopHexagon(request.printedWidthMm));
 }
 
 /** Fetches a DEM and returns the same validated millimeter mesh that is encoded into the STL response. */
