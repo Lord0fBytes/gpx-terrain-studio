@@ -26,6 +26,8 @@ The web client runs on Vite's printed URL and proxies `/api` to `http://localhos
 
 The first interactive checkpoint is GPX validation: select a `.gpx` file in the browser. The app reports its usable track/route segments and does not persist or display raw coordinates. Map placement, terrain generation, and STL download are not available yet.
 
+For server-only terrain experiments, create `.env` from `.env.example` with an approved `OPENTOPOGRAPHY_API_KEY`. `POST /api/terrain/generate` accepts explicit selection bounds, DEM grid dimensions, and print settings, then returns a binary STL. This endpoint is not yet connected to the browser and must not be treated as slicer or physical-print validation.
+
 ```sh
 npm test
 npm run build
