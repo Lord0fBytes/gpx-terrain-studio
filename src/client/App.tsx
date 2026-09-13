@@ -22,6 +22,7 @@ export function App() {
   const [printedWidthMm, setPrintedWidthMm] = useState('');
   const [baseThicknessMm, setBaseThicknessMm] = useState('');
   const [verticalExaggeration, setVerticalExaggeration] = useState('');
+  const [useLightSmoothing, setUseLightSmoothing] = useState(false);
   const [exportMessage, setExportMessage] = useState('Enter the intended physical dimensions to generate a terrain-only STL.');
   const [isGenerating, setIsGenerating] = useState(false);
   const selection = summary && deriveRouteSelection(summary.segments, {
@@ -73,6 +74,7 @@ export function App() {
           columns: 96,
           rows: 96,
           dataset: 'COP30',
+          smoothing: useLightSmoothing ? 'light' : 'raw',
           ...dimensions
         })
       });
@@ -133,6 +135,10 @@ export function App() {
                 <label>Printed width (mm)<input value={printedWidthMm} onChange={(event) => setPrintedWidthMm(event.target.value)} inputMode="decimal" min="0.01" required step="any" type="number" /></label>
                 <label>Base thickness (mm)<input value={baseThicknessMm} onChange={(event) => setBaseThicknessMm(event.target.value)} inputMode="decimal" min="0.01" required step="any" type="number" /></label>
                 <label>Vertical exaggeration<input value={verticalExaggeration} onChange={(event) => setVerticalExaggeration(event.target.value)} inputMode="decimal" min="0.01" required step="any" type="number" /></label>
+                <label className="smoothing-option">
+                  <input checked={useLightSmoothing} onChange={(event) => setUseLightSmoothing(event.target.checked)} type="checkbox" />
+                  <span><strong>Light smoothing</strong><small>Softens DEM-cell terraces with one conservative pass. Leave off for bilinear-only terrain.</small></span>
+                </label>
                 <button disabled={isGenerating} type="submit">{isGenerating ? 'Generating STL…' : 'Generate & download STL'}</button>
               </form>
               <p aria-live="polite" className="status">{exportMessage}</p>

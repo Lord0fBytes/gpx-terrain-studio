@@ -37,7 +37,11 @@ h2 { font-size: 1rem; letter-spacing: .08em; margin-top: 76px; text-transform: u
 .export-section h2 { margin: 0; }
 .export-form { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 18px; }
 .export-form label { color: #507065; display: grid; font-size: .75rem; font-weight: 800; gap: 7px; letter-spacing: .06em; text-transform: uppercase; }
-.export-form input { background: #fffdf7; border: 1px solid #bfc9bd; border-radius: 0; color: #183229; font: 1rem/1.2 Inter, ui-sans-serif, system-ui, sans-serif; min-height: 46px; padding: 10px; }
+.export-form input[type="number"] { background: #fffdf7; border: 1px solid #bfc9bd; border-radius: 0; color: #183229; font: 1rem/1.2 Inter, ui-sans-serif, system-ui, sans-serif; min-height: 46px; padding: 10px; }
+.smoothing-option { align-items: center; border: 1px solid #bfc9bd; color: #183229 !important; cursor: pointer; display: flex !important; font-size: .9rem !important; font-weight: 400 !important; gap: 12px; grid-column: 1 / -1; letter-spacing: 0 !important; line-height: 1.35; min-height: 54px; padding: 10px 12px; text-transform: none !important; }
+.smoothing-option input { block-size: 20px; flex: 0 0 20px; inline-size: 20px; margin: 0; }
+.smoothing-option span { display: grid; gap: 2px; }
+.smoothing-option small { color: #507065; font-size: .8rem; }
 .export-form button { background: #d86f3d; border: 0; color: #fff; cursor: pointer; font: 800 .9rem/1 Inter, ui-sans-serif, system-ui, sans-serif; grid-column: 1 / -1; min-height: 52px; padding: 14px; text-transform: uppercase; letter-spacing: .06em; }
 .export-form button:disabled { cursor: progress; opacity: .65; }
 .export-form input:focus-visible, .export-form button:focus-visible { outline: 3px solid #1e3a5f; outline-offset: 3px; }

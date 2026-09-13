@@ -14,6 +14,7 @@ The Obsidian project note is the source of truth for current scope, decisions, n
 - The browser currently requests a fixed 96 × 96 COP30 DEM grid for export (9,216 cells). The hex builder uses every available interval across that grid's limiting edge, producing a bounded high-detail surface rather than discarding half the requested density. This is still constrained by the underlying DEM resolution; no user-facing quality control is included yet.
 - The terrain-only export form intentionally requires the owner to enter printed width, base thickness, and vertical exaggeration. No unapproved physical defaults are silently applied.
 - Source GeoTIFF elevations are resampled bilinearly into the bounded export grid. This removes nearest-neighbor DEM-cell terraces without adding a terrain blur; it interpolates between measured cells but does not claim additional source detail.
+- The export form exposes one opt-in **Light smoothing** checkbox. It performs exactly one 3×3 mean pass after bilinear resampling and before vertical scaling; the unchecked default remains bilinear-only terrain.
 - `fast-xml-parser` is the approved GPX XML dependency (MIT; reviewed 2026-09-13). It is used for syntax validation and structured parsing rather than a hand-written regular-expression parser. [License](https://github.com/NaturalIntelligence/fast-xml-parser/blob/master/LICENSE)
 - Leaflet is selected as the prototype map library (BSD-2-Clause; reviewed 2026-09-13). [License/FAQ](https://github.com/Leaflet/Leaflet/blob/main/FAQ.md)
 

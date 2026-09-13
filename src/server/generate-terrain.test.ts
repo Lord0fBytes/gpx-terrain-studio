@@ -21,3 +21,16 @@ test('generates a millimeter STL from an injected DEM provider', async () => {
   assert.equal(result.triangleCount, 24);
   assert.equal(new DataView(result.stl.buffer).getUint32(80, true), 24);
 });
+
+test('accepts only the documented terrain smoothing modes', async () => {
+  await assert.rejects(generateTerrainStl({
+    bounds: { west: 0, south: 0, east: 0.01, north: 0.01 },
+    columns: 2,
+    rows: 2,
+    dataset: 'COP30',
+    printedWidthMm: 100,
+    baseThicknessMm: 3,
+    verticalExaggeration: 1,
+    smoothing: 'heavy' as never
+  }, { async sampleGrid() { throw new Error('Provider should not be called.'); } }), /smoothing/);
+});
