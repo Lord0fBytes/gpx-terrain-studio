@@ -1,5 +1,6 @@
-import { useState, type ChangeEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { RouteMap, type RouteSegment } from './RouteMap';
+import { deriveRouteSelection } from '../core/selection';
 
 const steps = [
   'Upload and validate a GPX route',
@@ -18,6 +19,16 @@ interface ValidationSummary {
 export function App() {
   const [summary, setSummary] = useState<ValidationSummary>();
   const [message, setMessage] = useState('Choose a GPX file to validate its route segments.');
+  const [printedWidthMm, setPrintedWidthMm] = useState('');
+  const [baseThicknessMm, setBaseThicknessMm] = useState('');
+  const [verticalExaggeration, setVerticalExaggeration] = useState('');
+  const [exportMessage, setExportMessage] = useState('Enter the intended physical dimensions to generate a terrain-only STL.');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const selection = summary && deriveRouteSelection(summary.segments, {
+    contextMarginRatio: 0.2,
+    minimumWidthM: 300,
+    minimumDepthM: 300
+  });
 
   async function validateGpx(event: ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = event.target.files?.[0];
@@ -39,6 +50,53 @@ export function App() {
     }
   }
 
+  async function exportTerrain(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    if (!selection) return;
+    const dimensions = {
+      printedWidthMm: Number(printedWidthMm),
+      baseThicknessMm: Number(baseThicknessMm),
+      verticalExaggeration: Number(verticalExaggeration)
+    };
+    if (Object.values(dimensions).some((value) => !Number.isFinite(value) || value <= 0)) {
+      setExportMessage('Printed width, base thickness, and vertical exaggeration must all be positive numbers.');
+      return;
+    }
+    setIsGenerating(true);
+    setExportMessage('Fetching elevation and generating the watertight STL…');
+    try {
+      const response = await fetch('/api/terrain/generate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          bounds: selection.geographicBounds,
+          columns: 96,
+          rows: 96,
+          dataset: 'COP30',
+          ...dimensions
+        })
+      });
+      if (!response.ok) {
+        const payload = await response.json() as { error?: string };
+        throw new Error(payload.error ?? 'Unable to generate terrain.');
+      }
+      const stl = await response.blob();
+      const downloadUrl = URL.createObjectURL(stl);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'gpx-terrain-hexagon.stl';
+      link.click();
+      URL.revokeObjectURL(downloadUrl);
+      const depthMm = response.headers.get('x-model-depth-mm');
+      const triangles = response.headers.get('x-triangle-count');
+      setExportMessage(`Downloaded terrain-only STL: ${dimensions.printedWidthMm} mm wide${depthMm ? ` × ${Number(depthMm).toFixed(1)} mm deep` : ''}${triangles ? `, ${triangles} triangles` : ''}.`);
+    } catch (error) {
+      setExportMessage(error instanceof Error ? error.message : 'Unable to generate terrain.');
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
   return (
     <main>
       <section className="hero" aria-labelledby="app-title">
@@ -47,7 +105,7 @@ export function App() {
         <p className="intro">
           A focused production tool for turning a route into a watertight terrain model.
         </p>
-        <p className="status">Foundation ready · GPX import is the next feature.</p>
+        <p className="status">GPX import, route selection, and terrain-only STL export are ready to test.</p>
       </section>
       <section className="upload" aria-labelledby="upload-title">
         <h2 id="upload-title">1. Validate GPX</h2>
@@ -65,8 +123,19 @@ export function App() {
             </dl>
             <section className="map-section" aria-labelledby="map-title">
               <h2 id="map-title">2. Inspect route</h2>
-              <p className="map-help">Each line preserves its original GPX segment; gaps are not connected.</p>
-              <RouteMap segments={summary.segments} />
+              <p className="map-help">Navy lines preserve original GPX segments. The orange hexagon is terrain: route bounds + 20% context, with a provisional 300 m minimum span.</p>
+              <RouteMap segments={summary.segments} selection={selection} />
+            </section>
+            <section className="export-section" aria-labelledby="export-title">
+              <h2 id="export-title">3. Export terrain STL</h2>
+              <p className="map-help">This exports the watertight hexagonal terrain and flat base in millimeters. Raised or recessed route geometry is not included yet.</p>
+              <form className="export-form" onSubmit={exportTerrain}>
+                <label>Printed width (mm)<input value={printedWidthMm} onChange={(event) => setPrintedWidthMm(event.target.value)} inputMode="decimal" min="0.01" required step="any" type="number" /></label>
+                <label>Base thickness (mm)<input value={baseThicknessMm} onChange={(event) => setBaseThicknessMm(event.target.value)} inputMode="decimal" min="0.01" required step="any" type="number" /></label>
+                <label>Vertical exaggeration<input value={verticalExaggeration} onChange={(event) => setVerticalExaggeration(event.target.value)} inputMode="decimal" min="0.01" required step="any" type="number" /></label>
+                <button disabled={isGenerating} type="submit">{isGenerating ? 'Generating STL…' : 'Generate & download STL'}</button>
+              </form>
+              <p aria-live="polite" className="status">{exportMessage}</p>
             </section>
           </>
         )}

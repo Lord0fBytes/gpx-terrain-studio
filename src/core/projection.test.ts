@@ -16,3 +16,11 @@ test('projects the origin to zero and uses east/north meters', () => {
 test('rejects invalid geographic coordinates', () => {
   assert.throws(() => createLocalProjection({ latitude: 91, longitude: 0 }), /Latitude/);
 });
+
+test('round-trips local offsets for map selection rendering', () => {
+  const projection = createLocalProjection({ latitude: 37.77, longitude: -122.42 });
+  const source = { latitude: 37.771, longitude: -122.418 };
+  const roundTrip = projection.unproject(projection.project(source));
+  assert.ok(Math.abs(roundTrip.latitude - source.latitude) < 1e-9);
+  assert.ok(Math.abs(roundTrip.longitude - source.longitude) < 1e-9);
+});

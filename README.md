@@ -8,7 +8,7 @@ An original, self-hosted tool for turning GPX routes into watertight, printable 
 
 ## Current state
 
-Only neutral repository foundation work is in place: a TypeScript client/API shell, API health endpoint, project conventions, and a multi-segment GPX fixture. No GPX parsing, map, elevation retrieval, terrain geometry, route geometry, preview, export, slicer validation, or print validation has been implemented.
+The prototype validates GPX files, preserves their segments on a Leaflet map, derives a regular flat-top hexagonal selection from route bounds plus the provisional 20% context rule, fetches a bounded OpenTopography DEM, and downloads a watertight terrain-only STL in millimeters. Route emboss/recess, a Three.js preview, slicer validation, and physical-print validation remain unfinished.
 
 ## Prerequisites
 
@@ -24,9 +24,9 @@ npm run dev
 
 The web client runs on Vite's printed URL and proxies `/api` to `http://localhost:8787`. Confirm the API with `http://localhost:8787/api/health`.
 
-The first interactive checkpoint is GPX validation: select a `.gpx` file in the browser. The app reports its usable track/route segments and does not persist or display raw coordinates. Map placement, terrain generation, and STL download are not available yet.
+Select a `.gpx` file in the browser, then enter the intended printed width, base thickness, and vertical exaggeration. The application downloads a terrain-only STL. The browser uses a fixed 96 × 96 DEM request as a bounded prototype setting; it intentionally does not expose a quality selector yet. No routes are written to persistent storage.
 
-For server-only terrain experiments, create `.env` from `.env.example` with an approved `OPENTOPOGRAPHY_API_KEY`. `POST /api/terrain/generate` accepts explicit selection bounds, DEM grid dimensions, and print settings, then returns a binary STL. This endpoint is not yet connected to the browser and must not be treated as slicer or physical-print validation.
+Create `.env` from `.env.example` with an approved `OPENTOPOGRAPHY_API_KEY`. `POST /api/terrain/generate` accepts explicit selection bounds, DEM grid dimensions, and print settings, then returns a binary STL. It is connected to the browser, but a successful download must not be treated as slicer or physical-print validation.
 
 ```sh
 npm test
@@ -42,4 +42,4 @@ Copy `.env.example` to `.env` only when an approved elevation provider is config
 - Core geometry tests must be deterministic and offline. Synthetic DEMs are test fixtures, not a production terrain fallback.
 - A successful build is not slicer validation or physical-print validation.
 
-See [docs/decisions.md](docs/decisions.md) for the decision register. It deliberately contains no unapproved physical defaults or external-provider selection.
+See [docs/decisions.md](docs/decisions.md) for the decision register. Physical print defaults and a production provider decision remain unapproved.

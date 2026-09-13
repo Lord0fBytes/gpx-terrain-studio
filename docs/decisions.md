@@ -9,6 +9,10 @@ The Obsidian project note is the source of truth for current scope, decisions, n
 - This is a new, original implementation. TrailPrint-3D may be used to understand behavior and edge cases, but its code and assets must not be copied.
 - The application will use TypeScript, a lightweight Vite UI, one Node/TypeScript API, and independently testable core modules.
 - STL is the first export format. No claim of slicer or physical-print validation is made by this repository.
+- V1 uses one regular, flat-top hexagonal terrain selection. Its initial geographic footprint is derived from the uploaded GPX route's local metric bounds plus a **20% context margin on every side**; it is not a single global fixed distance.
+- The initial 300 m × 300 m minimum selection is provisional. It gives the prototype OpenTopography integration room above its roughly 250 m bounding-box floor and needs owner validation against representative routes.
+- The browser currently requests a fixed 96 × 96 COP30 DEM grid for export (9,216 cells). This is a bounded prototype setting that keeps request and triangle counts practical while route geometry and slicer evidence are still pending; no user-facing quality control is included yet.
+- The terrain-only export form intentionally requires the owner to enter printed width, base thickness, and vertical exaggeration. No unapproved physical defaults are silently applied.
 - `fast-xml-parser` is the approved GPX XML dependency (MIT; reviewed 2026-09-13). It is used for syntax validation and structured parsing rather than a hand-written regular-expression parser. [License](https://github.com/NaturalIntelligence/fast-xml-parser/blob/master/LICENSE)
 - Leaflet is selected as the prototype map library (BSD-2-Clause; reviewed 2026-09-13). [License/FAQ](https://github.com/Leaflet/Leaflet/blob/main/FAQ.md)
 
@@ -16,7 +20,7 @@ The Obsidian project note is the source of truth for current scope, decisions, n
 
 Do not infer values or select a provider until the owner makes or approves the decision:
 
-- terrain selection shape and geographic footprint
+- route-derived minimum/maximum selection constraints
 - printed dimensions, base thickness, route dimensions, and exaggeration limits
 - elevation and map-tile providers, including commercial terms, coverage, credentials, attribution, cost, and limits
 - target slicer, printer/nozzle, and minimum printable detail

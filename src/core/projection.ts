@@ -8,11 +8,14 @@ export interface LocalPointMeters {
 export interface LocalProjection {
   readonly origin: Readonly<{ latitude: number; longitude: number }>;
   project(point: Pick<GeographicPoint, 'latitude' | 'longitude'>): LocalPointMeters;
+  unproject(point: LocalPointMeters): Readonly<{ latitude: number; longitude: number }>;
 }
 
 const SEMI_MAJOR_AXIS_M = 6_378_137;
 const FLATTENING = 1 / 298.257223563;
 const ECCENTRICITY_SQUARED = FLATTENING * (2 - FLATTENING);
+const SEMI_MINOR_AXIS_M = SEMI_MAJOR_AXIS_M * (1 - FLATTENING);
+const SECOND_ECCENTRICITY_SQUARED = (SEMI_MAJOR_AXIS_M ** 2 - SEMI_MINOR_AXIS_M ** 2) / SEMI_MINOR_AXIS_M ** 2;
 
 function radians(degrees: number): number {
   return (degrees * Math.PI) / 180;
@@ -58,6 +61,22 @@ export function createLocalProjection(origin: Readonly<{ latitude: number; longi
         x: -sinLon * dx + cosLon * dy,
         y: -sinLat * cosLon * dx - sinLat * sinLon * dy + cosLat * dz
       };
+    },
+    unproject(point) {
+      if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) throw new Error('Local coordinates must be finite.');
+      const x = originX - sinLon * point.x - sinLat * cosLon * point.y;
+      const y = originY + cosLon * point.x - sinLat * sinLon * point.y;
+      const z = originZ + cosLat * point.y;
+      const longitude = Math.atan2(y, x);
+      const distanceFromAxis = Math.hypot(x, y);
+      const theta = Math.atan2(z * SEMI_MAJOR_AXIS_M, distanceFromAxis * SEMI_MINOR_AXIS_M);
+      const sinTheta = Math.sin(theta);
+      const cosTheta = Math.cos(theta);
+      const latitude = Math.atan2(
+        z + SECOND_ECCENTRICITY_SQUARED * SEMI_MINOR_AXIS_M * sinTheta ** 3,
+        distanceFromAxis - ECCENTRICITY_SQUARED * SEMI_MAJOR_AXIS_M * cosTheta ** 3
+      );
+      return { latitude: (latitude * 180) / Math.PI, longitude: (longitude * 180) / Math.PI };
     }
   };
 }

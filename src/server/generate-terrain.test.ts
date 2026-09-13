@@ -17,7 +17,7 @@ test('generates a millimeter STL from an injected DEM provider', async () => {
     }
   });
   assert.equal(result.printedWidthMm, 100);
-  assert.ok(Math.abs(result.printedDepthMm - 99.33) < 0.01);
-  assert.equal(result.triangleCount, 12);
-  assert.equal(new DataView(result.stl.buffer).getUint32(80, true), 12);
+  assert.ok(Math.abs(result.printedDepthMm - 86.6025) < 0.001);
+  assert.equal(result.triangleCount, 24);
+  assert.equal(new DataView(result.stl.buffer).getUint32(80, true), 24);
 });

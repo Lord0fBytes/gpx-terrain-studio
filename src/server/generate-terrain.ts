@@ -1,7 +1,7 @@
 import { elevationToModelMm, derivePrintScale } from '../core/print-scale';
 import { createLocalProjection } from '../core/projection';
 import { encodeBinaryStl } from '../core/stl';
-import { buildTerrainSolid } from '../core/terrain';
+import { buildHexTerrainSolid } from '../core/hex-terrain';
 import type { DemGrid, DemSampleRequest, GeographicBounds } from './elevation/opentopography';
 
 export interface TerrainGenerationRequest extends DemSampleRequest {
@@ -42,24 +42,23 @@ export async function generateTerrainStl(
     throw new Error('Elevation provider returned a grid with unexpected dimensions.');
   }
   const datumM = Math.min(...dem.elevationsM);
-  const samplesMm = dem.elevationsM.map((elevationM) => elevationToModelMm(
-    elevationM,
-    datumM,
-    printScale.horizontalModelScaleMmPerM,
-    request.verticalExaggeration
-  ));
-  const mesh = buildTerrainSolid({
+  const mesh = buildHexTerrainSolid({
     widthMm: printScale.printedWidthMm,
-    depthMm: printScale.printedDepthMm,
     columns: dem.columns,
     rows: dem.rows,
-    samplesMm,
-    baseThicknessMm: request.baseThicknessMm
+    elevationsM: dem.elevationsM,
+    baseThicknessMm: request.baseThicknessMm,
+    elevationToModelMm: (elevationM) => elevationToModelMm(
+      elevationM,
+      datumM,
+      printScale.horizontalModelScaleMmPerM,
+      request.verticalExaggeration
+    )
   });
   return {
     stl: encodeBinaryStl(mesh),
     printedWidthMm: printScale.printedWidthMm,
-    printedDepthMm: printScale.printedDepthMm,
+    printedDepthMm: printScale.printedWidthMm * Math.sqrt(3) / 2,
     triangleCount: mesh.indices.length / 3
   };
 }
