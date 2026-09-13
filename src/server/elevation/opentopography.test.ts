@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { OpenTopographyProvider, openTopographyUrl, type DemSampleRequest } from './opentopography';
+import { DEM_RESAMPLE_METHOD, OpenTopographyProvider, openTopographyUrl, type DemSampleRequest } from './opentopography';
 
 const request: DemSampleRequest = {
   bounds: { west: -122.5, south: 37.7, east: -122.4, north: 37.8 },
@@ -15,6 +15,10 @@ test('builds a bounded OpenTopography GeoTIFF request without exposing it to cal
   assert.equal(url.searchParams.get('demtype'), 'COP30');
   assert.equal(url.searchParams.get('outputFormat'), 'GTiff');
   assert.equal(url.searchParams.get('API_Key'), 'private-key');
+});
+
+test('uses bilinear interpolation when resampling the source DEM into an export grid', () => {
+  assert.equal(DEM_RESAMPLE_METHOD, 'bilinear');
 });
 
 test('returns decoder samples ordered for the local south-to-north mesh convention', async () => {

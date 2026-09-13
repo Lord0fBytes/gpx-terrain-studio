@@ -29,6 +29,8 @@ const API_URL = 'https://portal.opentopography.org/API/globaldem';
 const MAX_GRID_EDGE = 512;
 const MAX_GRID_CELLS = 150_000;
 const DEFAULT_TIMEOUT_MS = 20_000;
+/** Smoothly resample source DEM cells into the bounded export grid without applying a terrain blur. */
+export const DEM_RESAMPLE_METHOD = 'bilinear';
 
 function finiteInRange(value: number, label: string, min: number, max: number): void {
   if (!Number.isFinite(value) || value < min || value > max) throw new Error(`${label} must be between ${min} and ${max}.`);
@@ -63,7 +65,12 @@ export function openTopographyUrl(request: DemSampleRequest, apiKey: string): UR
 async function decodeGeoTiff(data: ArrayBuffer, columns: number, rows: number): Promise<readonly number[]> {
   const tiff = await fromArrayBuffer(data);
   const image = await tiff.getImage();
-  const raster = await image.readRasters({ width: columns, height: rows, interleave: true });
+  const raster = await image.readRasters({
+    width: columns,
+    height: rows,
+    interleave: true,
+    resampleMethod: DEM_RESAMPLE_METHOD
+  });
   const values = Array.from(raster as ArrayLike<number>);
   if (values.length !== columns * rows) throw new Error('OpenTopography returned an unexpected raster size.');
   const nodata = Number(image.getGDALNoData());
