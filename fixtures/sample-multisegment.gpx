@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="GPX Terrain Studio fixture" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk><name>Two segment fixture</name><trkseg>
+    <trkpt lat="37.7749" lon="-122.4194" /><trkpt lat="37.7752" lon="-122.4188" />
+  </trkseg><trkseg>
+    <trkpt lat="37.7760" lon="-122.4179" /><trkpt lat="37.7763" lon="-122.4172" />
+  </trkseg></trk>
+</gpx>
