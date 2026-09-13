@@ -41,7 +41,9 @@ export function buildHexTerrainSolid(input: HexTerrainInput): IndexedMesh {
 
   const circumradiusMm = input.widthMm / 2;
   const depthMm = Math.sqrt(3) * circumradiusMm;
-  const subdivisions = Math.max(1, Math.floor(Math.min(input.columns, input.rows) / 2));
+  // Use every available DEM interval across the limiting grid edge. This improves
+  // surface fidelity without fabricating elevation values beyond bilinear sampling.
+  const subdivisions = Math.min(input.columns, input.rows) - 1;
   const vertices: Array<{ x: number; y: number; elevationMm: number }> = [];
   const vertexByCoordinate = new Map<string, number>();
   const indices: number[] = [];

@@ -41,6 +41,19 @@ test('preserves terrain relief while keeping the hexagonal base flat', () => {
   assert.ok(bounds.max.z > 2);
 });
 
+test('uses the full limiting DEM grid edge for hex surface detail', () => {
+  const mesh = buildHexTerrainSolid({
+    widthMm: 40,
+    columns: 4,
+    rows: 6,
+    elevationsM: Array.from({ length: 24 }, (_, index) => index),
+    baseThicknessMm: 2,
+    elevationToModelMm: (elevation) => elevation
+  });
+  // Six sectors × three squared subdivisions, with matching bottom and side walls.
+  assert.equal(mesh.indices.length / 3, 144);
+});
+
 test('rejects invalid hex terrain input', () => {
   assert.throws(() => buildHexTerrainSolid({
     widthMm: 40,
