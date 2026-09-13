@@ -9,6 +9,8 @@ export interface MeshAnalysis {
   readonly triangleCount: number;
   readonly boundaryEdges: number;
   readonly nonManifoldEdges: number;
+  readonly inconsistentWindingEdges: number;
+  readonly connectedComponents: number;
   readonly degenerateTriangles: number;
   readonly nonFiniteVertices: number;
   readonly signedVolumeMm3: number;
@@ -44,11 +46,12 @@ export function analyzeMesh(mesh: IndexedMesh): MeshAnalysis {
     throw new Error('Mesh indices must be a multiple of three.');
   }
 
-  const edgeUse = new Map<string, number>();
+  const edgeUse = new Map<string, { count: number; triangles: number[]; directions: readonly [number, number][] }>();
   let degenerateTriangles = 0;
   let signedVolumeMm3 = 0;
 
   for (let offset = 0; offset < mesh.indices.length; offset += 3) {
+    const triangle = offset / 3;
     const aIndex = mesh.indices[offset]!;
     const bIndex = mesh.indices[offset + 1]!;
     const cIndex = mesh.indices[offset + 2]!;
@@ -63,15 +66,45 @@ export function analyzeMesh(mesh: IndexedMesh): MeshAnalysis {
 
     for (const [from, to] of [[aIndex, bIndex], [bIndex, cIndex], [cIndex, aIndex]] as const) {
       const key = edgeKey(from, to);
-      edgeUse.set(key, (edgeUse.get(key) ?? 0) + 1);
+      const existing = edgeUse.get(key);
+      edgeUse.set(key, existing
+        ? { count: existing.count + 1, triangles: [...existing.triangles, triangle], directions: [...existing.directions, [from, to]] }
+        : { count: 1, triangles: [triangle], directions: [[from, to]] });
     }
   }
 
   let boundaryEdges = 0;
   let nonManifoldEdges = 0;
-  for (const count of edgeUse.values()) {
-    if (count === 1) boundaryEdges += 1;
-    if (count > 2) nonManifoldEdges += 1;
+  let inconsistentWindingEdges = 0;
+  const adjacency = Array.from({ length: mesh.indices.length / 3 }, () => new Set<number>());
+  for (const edge of edgeUse.values()) {
+    if (edge.count === 1) boundaryEdges += 1;
+    if (edge.count > 2) nonManifoldEdges += 1;
+    if (edge.count === 2) {
+      const [first, second] = edge.directions;
+      if (first![0] !== second![1] || first![1] !== second![0]) inconsistentWindingEdges += 1;
+      const [firstTriangle, secondTriangle] = edge.triangles;
+      adjacency[firstTriangle!]!.add(secondTriangle!);
+      adjacency[secondTriangle!]!.add(firstTriangle!);
+    }
+  }
+
+  let connectedComponents = 0;
+  const visited = new Set<number>();
+  for (let triangle = 0; triangle < adjacency.length; triangle += 1) {
+    if (visited.has(triangle)) continue;
+    connectedComponents += 1;
+    const queue = [triangle];
+    visited.add(triangle);
+    while (queue.length > 0) {
+      const current = queue.pop()!;
+      for (const neighbor of adjacency[current]!) {
+        if (!visited.has(neighbor)) {
+          visited.add(neighbor);
+          queue.push(neighbor);
+        }
+      }
+    }
   }
 
   const nonFiniteVertices = mesh.positions.filter(
@@ -82,6 +115,8 @@ export function analyzeMesh(mesh: IndexedMesh): MeshAnalysis {
     triangleCount: mesh.indices.length / 3,
     boundaryEdges,
     nonManifoldEdges,
+    inconsistentWindingEdges,
+    connectedComponents,
     degenerateTriangles,
     nonFiniteVertices,
     signedVolumeMm3
@@ -94,6 +129,8 @@ export function assertPrintableSolid(mesh: IndexedMesh): void {
   if (analysis.degenerateTriangles > 0) throw new Error('Mesh contains degenerate triangles.');
   if (analysis.boundaryEdges > 0) throw new Error('Mesh contains boundary edges.');
   if (analysis.nonManifoldEdges > 0) throw new Error('Mesh contains non-manifold edges.');
+  if (analysis.inconsistentWindingEdges > 0) throw new Error('Mesh contains inconsistently wound shared edges.');
+  if (analysis.connectedComponents !== 1) throw new Error('Mesh must be a single connected solid.');
   if (analysis.signedVolumeMm3 <= 0) throw new Error('Mesh must have positive signed volume.');
 }
 
