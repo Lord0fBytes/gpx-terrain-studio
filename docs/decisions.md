@@ -25,10 +25,12 @@ When a decision is made, record the value, rationale, review date, and validatio
 
 ## Provider research — OpenTopography, reviewed 2026-09-13
 
-TrailPrint-3D uses OpenTopography, so it is a useful behavior reference. It is **not selected** for this project.
+TrailPrint-3D uses OpenTopography, so it is a useful behavior reference. It is selected for the private prototype only.
 
 - OpenTopography's global DEM API supports datasets including COP30 and requires an API key.
 - Its current terms permit commercial use of obtained data, subject to dataset licensing and attribution, but prohibit integrating an ordinary API key into a commercial, for-profit product or service.
-- A commercial integration requires an Enterprise API key obtained directly from OpenTopography. Do not request, store, or implement against a free individual key for this project.
+- The owner reports direct confirmation from OpenTopography that a standard key is acceptable for this private prototype. The key must remain server-only, and its use must be re-confirmed against the written authorization and current terms before any commercial deployment.
+
+The adapter uses the `geotiff` package (MIT; reviewed 2026-09-13) to decode returned GeoTIFF data server-side. [License](https://github.com/geotiffjs/geotiff.js/blob/master/package.json)
 
 Sources: [Terms of Use](https://opentopography.org/usageterms), [developer/API guidance](https://opentopography.org/developers), and [citation policy](https://opentopography.org/node/10).

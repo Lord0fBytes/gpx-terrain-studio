@@ -12,10 +12,11 @@
     "dev:web": "vite",
     "build": "tsc --noEmit && vite build",
     "start": "tsx src/server/index.ts",
-    "test": "tsx --test src/server/index.test.ts src/core/*.test.ts"
+    "test": "tsx --test src/server/index.test.ts src/server/elevation/*.test.ts src/core/*.test.ts"
   },
   "dependencies": {
     "fast-xml-parser": "^5.11.1",
+    "geotiff": "^3.0.5",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
