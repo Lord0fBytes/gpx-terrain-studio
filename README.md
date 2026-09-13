@@ -24,6 +24,8 @@ npm run dev
 
 The web client runs on Vite's printed URL and proxies `/api` to `http://localhost:8787`. Confirm the API with `http://localhost:8787/api/health`.
 
+The first interactive checkpoint is GPX validation: select a `.gpx` file in the browser. The app reports its usable track/route segments and does not persist or display raw coordinates. Map placement, terrain generation, and STL download are not available yet.
+
 ```sh
 npm test
 npm run build

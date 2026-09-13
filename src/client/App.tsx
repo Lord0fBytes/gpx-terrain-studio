@@ -1,3 +1,5 @@
+import { useState, type ChangeEvent } from 'react';
+
 const steps = [
   'Upload and validate a GPX route',
   'Position the fixed terrain selection',
@@ -5,7 +7,37 @@ const steps = [
   'Export millimeter-scale STL'
 ];
 
+interface ValidationSummary {
+  readonly name?: string;
+  readonly segments: readonly { readonly source: string; readonly pointCount: number }[];
+  readonly duplicatePointsDiscarded: number;
+  readonly ignoredShortSegments: number;
+}
+
 export function App() {
+  const [summary, setSummary] = useState<ValidationSummary>();
+  const [message, setMessage] = useState('Choose a GPX file to validate its route segments.');
+
+  async function validateGpx(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setSummary(undefined);
+    setMessage(`Validating ${file.name}…`);
+    try {
+      const response = await fetch('/api/gpx/validate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/gpx+xml' },
+        body: await file.text()
+      });
+      const payload = await response.json() as ValidationSummary | { error: string };
+      if (!response.ok || 'error' in payload) throw new Error('error' in payload ? payload.error : 'Unable to validate GPX.');
+      setSummary(payload);
+      setMessage(`${file.name} is ready for map placement.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Unable to validate GPX.');
+    }
+  }
+
   return (
     <main>
       <section className="hero" aria-labelledby="app-title">
@@ -15,6 +47,21 @@ export function App() {
           A focused production tool for turning a route into a watertight terrain model.
         </p>
         <p className="status">Foundation ready · GPX import is the next feature.</p>
+      </section>
+      <section className="upload" aria-labelledby="upload-title">
+        <h2 id="upload-title">1. Validate GPX</h2>
+        <label className="file-input">
+          <span>Select GPX file</span>
+          <input accept=".gpx,application/gpx+xml,application/xml,text/xml" onChange={validateGpx} type="file" />
+        </label>
+        <p aria-live="polite" className="status">{message}</p>
+        {summary && (
+          <dl className="summary">
+            <div><dt>Segments</dt><dd>{summary.segments.length}</dd></div>
+            <div><dt>Points</dt><dd>{summary.segments.reduce((total, segment) => total + segment.pointCount, 0)}</dd></div>
+            <div><dt>Duplicates removed</dt><dd>{summary.duplicatePointsDiscarded}</dd></div>
+          </dl>
+        )}
       </section>
       <section aria-labelledby="workflow-title">
         <h2 id="workflow-title">Production workflow</h2>

@@ -15,6 +15,7 @@
     "test": "tsx --test src/server/index.test.ts src/core/*.test.ts"
   },
   "dependencies": {
+    "fast-xml-parser": "^5.11.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
