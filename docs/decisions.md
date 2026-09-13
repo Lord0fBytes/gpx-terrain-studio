@@ -22,3 +22,13 @@ Do not infer values or select a provider until the owner makes or approves the d
 - target slicer, printer/nozzle, and minimum printable detail
 
 When a decision is made, record the value, rationale, review date, and validation evidence here and update the Obsidian project note in the same change.
+
+## Provider research — OpenTopography, reviewed 2026-09-13
+
+TrailPrint-3D uses OpenTopography, so it is a useful behavior reference. It is **not selected** for this project.
+
+- OpenTopography's global DEM API supports datasets including COP30 and requires an API key.
+- Its current terms permit commercial use of obtained data, subject to dataset licensing and attribution, but prohibit integrating an ordinary API key into a commercial, for-profit product or service.
+- A commercial integration requires an Enterprise API key obtained directly from OpenTopography. Do not request, store, or implement against a free individual key for this project.
+
+Sources: [Terms of Use](https://opentopography.org/usageterms), [developer/API guidance](https://opentopography.org/developers), and [citation policy](https://opentopography.org/node/10).
