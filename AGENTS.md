@@ -6,6 +6,12 @@ Build a small, original, self-hosted web app that turns a GPX route into a print
 
 This is a planning artifact stored beside the Obsidian project note. Copy this file into the new application repository root before coding; the implementation instructions below apply to that application. Do not create application source code inside the vault. “GPX Terrain Studio” is a working name, and no code repository is established by this document.
 
+## Project note
+
+Read the project note before starting implementation for the current scope, decisions, next tasks, and activity log:
+
+[private project-note path removed before public release]
+
 ## MVP contract
 
 1. Upload and validate a GPX file.

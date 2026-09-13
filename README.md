@@ -1,10 +1,14 @@
 # GPX Terrain Studio
 
-An original, self-hosted tool for turning GPX routes into watertight, printable terrain STL models. The source of truth for product scope and geometry requirements is [AGENTS.md](AGENTS.md).
+An original, self-hosted tool for turning GPX routes into watertight, printable terrain STL models. The source of truth for project scope, decisions, next tasks, and activity history is the Obsidian project note:
+
+`[private project-note path removed before public release]`
+
+[AGENTS.md](AGENTS.md) carries the implementation contract copied from that project.
 
 ## Current state
 
-The foundation is in place: a TypeScript client, API health endpoint, project conventions, and a multi-segment GPX fixture. The first implementation milestone is offline GPX parsing plus a deterministic synthetic-DEM terrain solid and STL export. Real elevation retrieval and printable route geometry are intentionally not implemented yet.
+Only neutral repository foundation work is in place: a TypeScript client/API shell, API health endpoint, project conventions, and a multi-segment GPX fixture. No GPX parsing, map, elevation retrieval, terrain geometry, route geometry, preview, export, slicer validation, or print validation has been implemented.
 
 ## Prerequisites
 
@@ -34,4 +38,4 @@ Copy `.env.example` to `.env` only when an approved elevation provider is config
 - Core geometry tests must be deterministic and offline. Synthetic DEMs are test fixtures, not a production terrain fallback.
 - A successful build is not slicer validation or physical-print validation.
 
-See [docs/decisions.md](docs/decisions.md) for provisional dimensions and external-service decisions.
+See [docs/decisions.md](docs/decisions.md) for the decision register. It deliberately contains no unapproved physical defaults or external-provider selection.
