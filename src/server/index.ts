@@ -46,7 +46,7 @@ export async function handleRequest(request: IncomingMessage, response: ServerRe
       const parsed = parseGpx(await readRequestBody(request));
       sendJson(response, 200, {
         name: parsed.name,
-        segments: parsed.segments.map((segment) => ({ source: segment.source, pointCount: segment.points.length })),
+        segments: parsed.segments,
         duplicatePointsDiscarded: parsed.duplicatePointsDiscarded,
         ignoredShortSegments: parsed.ignoredShortSegments
       });

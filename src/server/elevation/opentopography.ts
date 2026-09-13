@@ -94,7 +94,14 @@ export class OpenTopographyProvider {
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
       const response = await this.fetchImpl(url.toString(), { signal: controller.signal });
-      if (!response.ok) throw new Error(`OpenTopography request failed with HTTP ${response.status}.`);
+      if (!response.ok) {
+        const detail = (await response.text())
+          .replaceAll(this.apiKey, '[redacted]')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 500);
+        throw new Error(`OpenTopography request failed with HTTP ${response.status}${detail ? `: ${detail}` : '.'}`);
+      }
       const elevationsM = await this.decoder(await response.arrayBuffer(), request.columns, request.rows);
       if (elevationsM.length !== request.columns * request.rows || elevationsM.some((value) => !Number.isFinite(value))) {
         throw new Error('OpenTopography returned an invalid elevation grid.');

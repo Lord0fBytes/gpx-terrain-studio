@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent } from 'react';
+import { RouteMap, type RouteSegment } from './RouteMap';
 
 const steps = [
   'Upload and validate a GPX route',
@@ -9,7 +10,7 @@ const steps = [
 
 interface ValidationSummary {
   readonly name?: string;
-  readonly segments: readonly { readonly source: string; readonly pointCount: number }[];
+  readonly segments: readonly RouteSegment[];
   readonly duplicatePointsDiscarded: number;
   readonly ignoredShortSegments: number;
 }
@@ -56,11 +57,18 @@ export function App() {
         </label>
         <p aria-live="polite" className="status">{message}</p>
         {summary && (
-          <dl className="summary">
-            <div><dt>Segments</dt><dd>{summary.segments.length}</dd></div>
-            <div><dt>Points</dt><dd>{summary.segments.reduce((total, segment) => total + segment.pointCount, 0)}</dd></div>
-            <div><dt>Duplicates removed</dt><dd>{summary.duplicatePointsDiscarded}</dd></div>
-          </dl>
+          <>
+            <dl className="summary">
+              <div><dt>Segments</dt><dd>{summary.segments.length}</dd></div>
+              <div><dt>Points</dt><dd>{summary.segments.reduce((total, segment) => total + segment.points.length, 0)}</dd></div>
+              <div><dt>Duplicates removed</dt><dd>{summary.duplicatePointsDiscarded}</dd></div>
+            </dl>
+            <section className="map-section" aria-labelledby="map-title">
+              <h2 id="map-title">2. Inspect route</h2>
+              <p className="map-help">Each line preserves its original GPX segment; gaps are not connected.</p>
+              <RouteMap segments={summary.segments} />
+            </section>
+          </>
         )}
       </section>
       <section aria-labelledby="workflow-title">

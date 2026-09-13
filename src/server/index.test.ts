@@ -28,7 +28,7 @@ test('GPX validation summarizes segments without returning route coordinates', a
   });
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), {
-    segments: [{ source: 'track', pointCount: 2 }],
+    segments: [{ source: 'track', points: [{ latitude: 1, longitude: 2 }, { latitude: 1.1, longitude: 2.1 }] }],
     duplicatePointsDiscarded: 0,
     ignoredShortSegments: 0
   });
