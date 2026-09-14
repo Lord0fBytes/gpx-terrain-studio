@@ -17,6 +17,7 @@ h1 { font-family: Georgia, serif; font-size: clamp(2.8rem, 8vw, 5.8rem); letter-
 h2 { font-size: 1rem; letter-spacing: .08em; margin-top: 76px; text-transform: uppercase; }
 .intro { font: 1.25rem/1.55 Georgia, serif; max-width: 42rem; }
 .status { color: #507065; font-size: .9rem; font-weight: 700; margin-top: 26px; }
+.status.is-error { color: #c9251a; }
 .steps { border-top: 1px solid #bfc9bd; list-style: none; margin: 18px 0 0; padding: 0; }
 .steps li { align-items: baseline; border-bottom: 1px solid #bfc9bd; display: flex; font-size: 1.15rem; gap: 24px; padding: 18px 0; }
 .steps span { color: #ab4e26; font-size: .8rem; font-weight: 800; letter-spacing: .08em; }

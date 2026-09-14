@@ -27,6 +27,7 @@ export function App() {
   const [routeWidthMm, setRouteWidthMm] = useState('');
   const [routeHeightMm, setRouteHeightMm] = useState('');
   const [exportMessage, setExportMessage] = useState('Enter the intended physical dimensions to generate a terrain-only STL.');
+  const [exportIsError, setExportIsError] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const selection = summary && deriveRouteSelection(summary.segments, {
     contextMarginRatio: 0.2,
@@ -64,14 +65,17 @@ export function App() {
     };
     if (Object.values(dimensions).some((value) => !Number.isFinite(value) || value <= 0)) {
       setExportMessage('Printed width, base thickness, and vertical exaggeration must all be positive numbers.');
+      setExportIsError(true);
       return;
     }
     const raisedRoute = includeRaisedRoute ? { widthMm: Number(routeWidthMm), heightMm: Number(routeHeightMm), segments: summary?.segments ?? [] } : undefined;
     if (raisedRoute && (!Number.isFinite(raisedRoute.widthMm) || raisedRoute.widthMm <= 0 || !Number.isFinite(raisedRoute.heightMm) || raisedRoute.heightMm <= 0)) {
       setExportMessage('Raised route width and height must both be positive numbers.');
+      setExportIsError(true);
       return;
     }
     setIsGenerating(true);
+    setExportIsError(false);
     setExportMessage('Fetching elevation and generating the watertight STL…');
     try {
       const response = await fetch('/api/terrain/generate', {
@@ -104,6 +108,7 @@ export function App() {
       setExportMessage(`Downloaded ${includeRaisedRoute ? 'raised-route' : 'terrain-only'} STL: ${dimensions.printedWidthMm} mm wide${depthMm ? ` × ${Number(depthMm).toFixed(1)} mm deep` : ''}${triangles ? `, ${triangles} triangles` : ''}.${omittedRouteSegments > 0 ? ` ${omittedRouteSegments} route segment${omittedRouteSegments === 1 ? '' : 's'} fell outside the hexagon.` : ''}`);
     } catch (error) {
       setExportMessage(error instanceof Error ? error.message : 'Unable to generate terrain.');
+      setExportIsError(true);
     } finally {
       setIsGenerating(false);
     }
@@ -160,7 +165,7 @@ export function App() {
                 </div>}
                 <button disabled={isGenerating} type="submit">{isGenerating ? 'Generating STL…' : 'Generate & download STL'}</button>
               </form>
-              <p aria-live="polite" className="status">{exportMessage}</p>
+              <p aria-live="polite" className={`status${exportIsError ? ' is-error' : ''}`} role={exportIsError ? 'alert' : undefined}>{exportMessage}</p>
             </section>
           </>
         )}
