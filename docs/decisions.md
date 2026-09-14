@@ -1,8 +1,6 @@
 # Decision register
 
-The Obsidian project note is the source of truth for current scope, decisions, next tasks, and activity history:
-
-`[private project-note path removed before public release]`
+This document is the repository record for current scope, technical decisions, and known limitations.
 
 ## Confirmed repository foundations
 
@@ -34,7 +32,7 @@ Do not infer values or select a provider until the owner makes or approves the d
 - elevation and map-tile providers, including commercial terms, coverage, credentials, attribution, cost, and limits
 - target slicer, printer/nozzle, and minimum printable detail
 
-When a decision is made, record the value, rationale, review date, and validation evidence here and update the Obsidian project note in the same change.
+When a decision is made, record the value, rationale, review date, and validation evidence here.
 
 ## Prototype map tiles — reviewed 2026-09-13
 

@@ -4,13 +4,11 @@
 
 Build a small, original, self-hosted web app that turns a GPX route into a printable terrain model. The initial user is the owner producing physical products for eventual Etsy sales. Prioritize reliable printable output and a short production workflow.
 
-This is a planning artifact stored beside the Obsidian project note. Copy this file into the new application repository root before coding; the implementation instructions below apply to that application. Do not create application source code inside the vault. “GPX Terrain Studio” is a working name, and no code repository is established by this document.
+These instructions apply to this repository. GPX Terrain Studio is a working name; the application is an original implementation rather than a translated fork.
 
 ## Project note
 
-Read the project note before starting implementation for the current scope, decisions, next tasks, and activity log:
-
-[private project-note path removed before public release]
+Read [docs/decisions.md](docs/decisions.md) before starting implementation for current scope, decisions, and known limitations.
 
 ## MVP contract
 

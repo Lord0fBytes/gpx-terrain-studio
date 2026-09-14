@@ -1,16 +1,25 @@
 # GPX Terrain Studio
 
-An original, self-hosted tool for turning GPX routes into watertight, printable terrain STL models. The source of truth for project scope, decisions, next tasks, and activity history is the Obsidian project note:
+> Turn a GPX route into a framed, watertight terrain model—ready to inspect in 3D and export as STL.
 
-`[private project-note path removed before public release]`
+![GPX Terrain Studio showing the final 3D model viewer](assets/gpx-terrain-studio-preview.svg)
 
-[AGENTS.md](AGENTS.md) carries the implementation contract copied from that project.
+GPX Terrain Studio is an original, self-hosted prototype for making printable terrain from outdoor routes. It keeps the production flow deliberately focused: upload a GPX, review the terrain area, tune print settings, inspect the exact export geometry, and download an STL measured in millimeters.
 
-## Current state
+## What it does
 
-**Paused 2026-09-14.** The implementation is at a handoff point: it validates GPX files, preserves their segments on a Leaflet map, derives a regular flat-top hexagonal selection from route bounds plus the provisional 20% context rule, fetches a bounded OpenTopography DEM, and generates a watertight STL in millimeters. The entered width controls the terrain footprint; every export adds a 6 mm frame beyond each side (100 mm terrain becomes 112 mm overall), with its top 5 mm above the configured base thickness. An integrated raised route is optional; recessed routes are out of scope. The browser guides work through four gated stages—upload, map, settings, and exact-STL preview—and reuses the preview bytes for the separate download action. A single-container configuration serves both the built browser app and API.
+- Validates GPX files while preserving separate route segments.
+- Derives a regular flat-top hexagonal terrain area around the route.
+- Fetches bounded real-world elevation data and generates a single watertight terrain solid.
+- Adds an optional raised route and a 6 mm exterior frame without changing the requested terrain footprint.
+- Previews the exact binary STL in Three.js; the download reuses those same bytes.
+- Runs the browser app and API together in one Docker container.
 
-Before resuming product work, verify the documented Docker startup, inspect representative terrain-only and raised-route STL exports in the target slicer, and complete physical print checks. Two-tone printing is not an application feature in this release: standard STL has no portable material assignment. A multi-material slicer can be used experimentally to paint the raised route; a native multi-material/3MF workflow remains deferred until the STL workflow is validated.
+## Project status
+
+**Paused prototype — 2026-09-14.** The implementation is at a clean handoff point, but it is not yet production-validated. Before resuming product work, verify Docker startup, inspect representative terrain-only and raised-route exports in the target slicer, and complete physical print checks.
+
+Standard STL has no portable material assignment. Multi-material slicer painting can be used experimentally for a two-tone route; native multi-material or 3MF export remains deferred until the STL workflow is validated.
 
 ## Prerequisites
 
@@ -63,11 +72,11 @@ The API bounds request bodies to 1 MB, DEM grids to 512 cells per edge and 150,0
 
 If you copied an earlier version of `.env.example`, replace it with the current placeholder and rotate any provider key that might have been exposed through version control.
 
-## Engineering rules
+## Technical notes
 
-- Geographic coordinates are projected to local metric coordinates before any geometry work.
-- The final preview and STL must consume the same validated mesh in millimeters.
-- Core geometry tests must be deterministic and offline. Synthetic DEMs are test fixtures, not a production terrain fallback.
-- A successful build is not slicer validation or physical-print validation.
+- Geographic coordinates are projected to local metric coordinates before geometry work.
+- Preview and download consume the same validated mesh in millimeters.
+- Core geometry tests are deterministic and offline; synthetic DEMs are fixtures, not a production terrain fallback.
+- A successful build is not slicer or physical-print validation.
 
-See [docs/decisions.md](docs/decisions.md) for the decision register. Physical print defaults and a production provider decision remain unapproved.
+See [docs/decisions.md](docs/decisions.md) for technical decisions and known limitations.
