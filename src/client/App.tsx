@@ -1,6 +1,11 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { lazy, Suspense, useState, type ChangeEvent, type FormEvent } from 'react';
 import { RouteMap, type RouteSegment } from './RouteMap';
 import { deriveRouteSelection } from '../core/selection';
+
+const TerrainViewer = lazy(async () => {
+  const module = await import('./TerrainViewer');
+  return { default: module.TerrainViewer };
+});
 
 const steps = [
   'Upload and validate a GPX route',
@@ -16,6 +21,16 @@ interface ValidationSummary {
   readonly ignoredShortSegments: number;
 }
 
+interface GeneratedModel {
+  readonly stl: ArrayBuffer;
+  readonly settingsKey: string;
+  readonly overallWidthMm?: number;
+  readonly overallDepthMm?: number;
+  readonly triangleCount?: number;
+  readonly omittedRouteSegments: number;
+  readonly includesRaisedRoute: boolean;
+}
+
 export function App() {
   const [summary, setSummary] = useState<ValidationSummary>();
   const [message, setMessage] = useState('Choose a GPX file to validate its route segments.');
@@ -29,16 +44,31 @@ export function App() {
   const [exportMessage, setExportMessage] = useState('Enter the intended physical dimensions to generate a terrain STL with its raised border.');
   const [exportIsError, setExportIsError] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedModel, setGeneratedModel] = useState<GeneratedModel>();
   const selection = summary && deriveRouteSelection(summary.segments, {
     contextMarginRatio: 0.2,
     minimumWidthM: 300,
     minimumDepthM: 300
   });
+  const generationRequest = selection ? {
+    bounds: selection.geographicBounds,
+    columns: 96,
+    rows: 96,
+    dataset: 'COP30',
+    smoothing: useLightSmoothing ? 'light' : 'raw',
+    raisedRoute: includeRaisedRoute ? { widthMm: Number(routeWidthMm), heightMm: Number(routeHeightMm), segments: summary?.segments ?? [] } : undefined,
+    printedWidthMm: Number(printedWidthMm),
+    baseThicknessMm: Number(baseThicknessMm),
+    verticalExaggeration: Number(verticalExaggeration)
+  } : undefined;
+  const currentSettingsKey = generationRequest ? JSON.stringify(generationRequest) : '';
+  const previewIsStale = generatedModel !== undefined && generatedModel.settingsKey !== currentSettingsKey;
 
   async function validateGpx(event: ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = event.target.files?.[0];
     if (!file) return;
     setSummary(undefined);
+    setGeneratedModel(undefined);
     setMessage(`Validating ${file.name}…`);
     try {
       const response = await fetch('/api/gpx/validate', {
@@ -68,7 +98,7 @@ export function App() {
       setExportIsError(true);
       return;
     }
-    const raisedRoute = includeRaisedRoute ? { widthMm: Number(routeWidthMm), heightMm: Number(routeHeightMm), segments: summary?.segments ?? [] } : undefined;
+    const raisedRoute = generationRequest?.raisedRoute;
     if (raisedRoute && (!Number.isFinite(raisedRoute.widthMm) || raisedRoute.widthMm <= 0 || !Number.isFinite(raisedRoute.heightMm) || raisedRoute.heightMm <= 0)) {
       setExportMessage('Raised route width and height must both be positive numbers.');
       setExportIsError(true);
@@ -81,38 +111,43 @@ export function App() {
       const response = await fetch('/api/terrain/generate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          bounds: selection.geographicBounds,
-          columns: 96,
-          rows: 96,
-          dataset: 'COP30',
-          smoothing: useLightSmoothing ? 'light' : 'raw',
-          raisedRoute,
-          ...dimensions
-        })
+        body: JSON.stringify({ ...generationRequest, ...dimensions })
       });
       if (!response.ok) {
         const payload = await response.json() as { error?: string };
         throw new Error(payload.error ?? 'Unable to generate terrain.');
       }
-      const stl = await response.blob();
-      const downloadUrl = URL.createObjectURL(stl);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = 'gpx-terrain-hexagon.stl';
-      link.click();
-      URL.revokeObjectURL(downloadUrl);
+      const stl = await response.arrayBuffer();
       const depthMm = response.headers.get('x-model-depth-mm');
       const modelWidthMm = response.headers.get('x-model-width-mm');
       const triangles = response.headers.get('x-triangle-count');
       const omittedRouteSegments = Number(response.headers.get('x-route-segments-omitted') ?? '0');
-      setExportMessage(`Downloaded ${includeRaisedRoute ? 'raised-route' : 'terrain'} STL: ${dimensions.printedWidthMm} mm terrain width plus a 6 mm border on each side${modelWidthMm ? `; ${Number(modelWidthMm).toFixed(1)} mm overall` : ''}${depthMm ? ` × ${Number(depthMm).toFixed(1)} mm deep` : ''}${triangles ? `, ${triangles} triangles` : ''}.${omittedRouteSegments > 0 ? ` ${omittedRouteSegments} route segment${omittedRouteSegments === 1 ? '' : 's'} fell outside the hexagon.` : ''}`);
+      setGeneratedModel({
+        stl,
+        settingsKey: currentSettingsKey,
+        overallWidthMm: modelWidthMm ? Number(modelWidthMm) : undefined,
+        overallDepthMm: depthMm ? Number(depthMm) : undefined,
+        triangleCount: triangles ? Number(triangles) : undefined,
+        omittedRouteSegments,
+        includesRaisedRoute: includeRaisedRoute
+      });
+      setExportMessage(`Preview ready for the exact ${includeRaisedRoute ? 'raised-route' : 'terrain'} STL.${omittedRouteSegments > 0 ? ` ${omittedRouteSegments} route segment${omittedRouteSegments === 1 ? '' : 's'} fell outside the hexagon.` : ''}`);
     } catch (error) {
       setExportMessage(error instanceof Error ? error.message : 'Unable to generate terrain.');
       setExportIsError(true);
     } finally {
       setIsGenerating(false);
     }
+  }
+
+  function downloadGeneratedModel(): void {
+    if (!generatedModel || previewIsStale) return;
+    const downloadUrl = URL.createObjectURL(new Blob([generatedModel.stl], { type: 'model/stl' }));
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = 'gpx-terrain-hexagon.stl';
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
   }
 
   return (
@@ -145,7 +180,7 @@ export function App() {
               <RouteMap segments={summary.segments} selection={selection} />
             </section>
             <section className="export-section" aria-labelledby="export-title">
-              <h2 id="export-title">3. Export terrain STL</h2>
+              <h2 id="export-title">3. Generate and inspect</h2>
               <p className="map-help">The entered terrain width excludes the frame. Every export adds a 6 mm frame outside each side, with its top 5 mm above the configured base thickness. Optionally add the raised route; recessed routes are excluded.</p>
               <form className="export-form" onSubmit={exportTerrain}>
                 <label>Terrain width, excluding border (mm)<input value={printedWidthMm} onChange={(event) => setPrintedWidthMm(event.target.value)} inputMode="decimal" min="0.01" required step="any" type="number" /></label>
@@ -164,9 +199,29 @@ export function App() {
                   <label>Route rise (mm)<input value={routeHeightMm} onChange={(event) => setRouteHeightMm(event.target.value)} inputMode="decimal" min="0.01" required step="any" type="number" /></label>
                   <p>Use values appropriate for your printer; no printable-detail defaults have been approved yet.</p>
                 </div>}
-                <button disabled={isGenerating} type="submit">{isGenerating ? 'Generating STL…' : 'Generate & download STL'}</button>
+                <button disabled={isGenerating} type="submit">{isGenerating ? 'Generating preview…' : 'Generate preview'}</button>
               </form>
               <p aria-live="polite" className={`status${exportIsError ? ' is-error' : ''}`} role={exportIsError ? 'alert' : undefined}>{exportMessage}</p>
+              {generatedModel && <section className="preview-section" aria-labelledby="preview-title">
+                <div className="preview-heading">
+                  <div>
+                    <p className="eyebrow">FINAL GEOMETRY</p>
+                    <h3 id="preview-title">4. Preview and export</h3>
+                  </div>
+                  <dl className="preview-summary">
+                    {generatedModel.overallWidthMm !== undefined && <div><dt>Overall width</dt><dd>{generatedModel.overallWidthMm.toFixed(1)} mm</dd></div>}
+                    {generatedModel.overallDepthMm !== undefined && <div><dt>Overall depth</dt><dd>{generatedModel.overallDepthMm.toFixed(1)} mm</dd></div>}
+                    {generatedModel.triangleCount !== undefined && <div><dt>Triangles</dt><dd>{generatedModel.triangleCount.toLocaleString()}</dd></div>}
+                  </dl>
+                </div>
+                <Suspense fallback={<div className="terrain-viewer is-loading" aria-busy="true"><p>Loading 3D viewer…</p></div>}>
+                  <TerrainViewer isStale={previewIsStale} stl={generatedModel.stl} />
+                </Suspense>
+                <div className="preview-actions">
+                  <p>{generatedModel.includesRaisedRoute ? 'Terrain, exterior frame, and raised route are shown.' : 'Terrain and exterior frame are shown without a raised route.'}</p>
+                  <button disabled={previewIsStale} onClick={downloadGeneratedModel} type="button">{previewIsStale ? 'Regenerate before download' : 'Download STL'}</button>
+                </div>
+              </section>}
             </section>
           </>
         )}

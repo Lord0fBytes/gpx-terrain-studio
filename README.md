@@ -8,7 +8,7 @@ An original, self-hosted tool for turning GPX routes into watertight, printable 
 
 ## Current state
 
-The prototype validates GPX files, preserves their segments on a Leaflet map, derives a regular flat-top hexagonal selection from route bounds plus the provisional 20% context rule, fetches a bounded OpenTopography DEM, and downloads a watertight STL in millimeters. The entered width controls the terrain footprint; every export adds a 6 mm frame beyond each side (100 mm terrain becomes 112 mm overall), with its top 5 mm above the configured base thickness. An integrated raised route is optional. Recessed routes, a Three.js preview, slicer validation, and physical-print validation remain unfinished.
+The prototype validates GPX files, preserves their segments on a Leaflet map, derives a regular flat-top hexagonal selection from route bounds plus the provisional 20% context rule, fetches a bounded OpenTopography DEM, and generates a watertight STL in millimeters. The entered width controls the terrain footprint; every export adds a 6 mm frame beyond each side (100 mm terrain becomes 112 mm overall), with its top 5 mm above the configured base thickness. An integrated raised route is optional; recessed routes are out of scope. The browser previews the exact generated STL bytes in Three.js and reuses those bytes for the separate download action. Slicer validation and physical-print validation remain unfinished.
 
 ## Prerequisites
 
@@ -24,9 +24,9 @@ npm run dev
 
 The web client runs on Vite's printed URL and proxies `/api` to `http://localhost:8787`. Confirm the API with `http://localhost:8787/api/health`.
 
-Select a `.gpx` file in the browser, then enter the intended terrain width (excluding the fixed exterior frame), base thickness, and vertical exaggeration. The application downloads a framed terrain STL, with an optional raised route. The browser uses a fixed 96 × 96 DEM request as a bounded prototype setting; it intentionally does not expose a quality selector yet. No routes are written to persistent storage.
+Select a `.gpx` file in the browser, then enter the intended terrain width (excluding the fixed exterior frame), base thickness, and vertical exaggeration. Generate the framed model, inspect the exact STL in the interactive preview, and use the separate download button when it is ready. Changing any generation setting marks the preview stale and disables download until regeneration. The browser uses a fixed 96 × 96 DEM request as a bounded prototype setting; it intentionally does not expose a quality selector yet. No routes are written to persistent storage.
 
-Create `.env` from `.env.example` with an approved `OPENTOPOGRAPHY_API_KEY`. `POST /api/terrain/generate` accepts explicit selection bounds, DEM grid dimensions, and print settings, then returns a binary STL. It is connected to the browser, but a successful download must not be treated as slicer or physical-print validation.
+Create `.env` from `.env.example` with an approved `OPENTOPOGRAPHY_API_KEY`. `POST /api/terrain/generate` accepts explicit selection bounds, DEM grid dimensions, and print settings, then returns a binary STL. It is connected to the browser, but a successful preview or download must not be treated as slicer or physical-print validation.
 
 ```sh
 npm test

@@ -20,6 +20,7 @@ The Obsidian project note is the source of truth for current scope, decisions, n
 - Every export includes an integrated exterior border. The entered printed width controls only the terrain footprint; the frame extends 6 mm beyond every extent, so a 100 mm terrain becomes 112 mm overall across its left/right extent. The flat frame top sits exactly 5 mm above the configured base thickness and joins the terrain through an inner wall, all within one indexed watertight solid.
 - `fast-xml-parser` is the approved GPX XML dependency (MIT; reviewed 2026-09-13). It is used for syntax validation and structured parsing rather than a hand-written regular-expression parser. [License](https://github.com/NaturalIntelligence/fast-xml-parser/blob/master/LICENSE)
 - Leaflet is selected as the prototype map library (BSD-2-Clause; reviewed 2026-09-13). [License/FAQ](https://github.com/Leaflet/Leaflet/blob/main/FAQ.md)
+- Three.js r186 and its DefinitelyTyped declarations are selected for the interactive model preview (MIT; reviewed 2026-09-13). The viewer parses the exact binary STL returned by the generation endpoint, and the download action reuses those same bytes so preview and export cannot diverge. `STLLoader` and `OrbitControls` come from the package's official addons, and the viewer bundle is loaded only after generation. [Three.js license](https://github.com/mrdoob/three.js/blob/dev/LICENSE) · [DefinitelyTyped license](https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/LICENSE)
 
 ## Decisions intentionally pending
 
