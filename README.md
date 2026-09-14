@@ -2,7 +2,7 @@
 
 > Turn a GPX route into a framed, watertight terrain model—ready to inspect in 3D and export as STL.
 
-![GPX Terrain Studio showing the final 3D model viewer](assets/gpx-terrain-studio-preview.svg)
+![GPX Terrain Studio showing the final 3D model viewer](assets/readme-screenshot.png)
 
 GPX Terrain Studio is an original, self-hosted prototype for making printable terrain from outdoor routes. It keeps the production flow deliberately focused: upload a GPX, review the terrain area, tune print settings, inspect the exact export geometry, and download an STL measured in millimeters.
 
