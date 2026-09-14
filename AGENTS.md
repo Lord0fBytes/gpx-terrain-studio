@@ -20,7 +20,7 @@ Read the project note before starting implementation for the current scope, deci
 4. Fetch real elevation data covering that area.
 5. Set physical model dimensions in millimeters and vertical exaggeration.
 6. Generate a watertight terrain solid with closed sides and a flat base.
-7. Add a raised or recessed route as part of the printable solid.
+7. Add an optional raised route as part of the printable solid. Recessed routes are explicitly excluded by the owner.
 8. Preview the generated model using Three.js.
 9. Export STL at the intended physical dimensions.
 
@@ -49,7 +49,7 @@ Exclude accounts, databases, persistent project storage, queues, Strava/Garmin i
 - Define vertical scaling as: base thickness + (elevation − documented datum) × horizontal model scale × vertical exaggeration. Use consistent meters-to-millimeters conversion. Exaggeration changes terrain relief, not base thickness or route feature dimensions.
 - Fetch elevation with sufficient sampling margin, then clip to the exact polygon. Handle missing DEM cells and provider failures explicitly; do not substitute zero elevation or synthetic terrain silently.
 - Implement an original geometry pipeline. A height-field route emboss/deboss approach is a reasonable first experiment if sampling can preserve physical route width and depth. Choose a more complex method only when measurable output defects justify it.
-- Raised routes must join the terrain; recessed routes must preserve a minimum material thickness above the base. Overlapping shells and a floating preview line are not acceptable printable route geometry.
+- Raised routes must join the terrain. Overlapping shells and a floating preview line are not acceptable printable route geometry. Recessed routes are out of scope.
 - Handle switchbacks, route self-crossings, near-edge routes, and routes crossing the polygon boundary. Clip consistently and keep the final solid closed. Show when part of a route falls outside the selection.
 - Require finite vertices, nondegenerate triangles, consistent outward winding, manifold connectivity, no boundary edges or self-intersections, and positive enclosed volume. Validate a single connected solid for the terrain and route.
 - Reject or explain settings that cannot preserve a printable route at the chosen resolution. Establish and document conservative route width, route height/depth, base thickness, and resolution limits using print evidence.
@@ -66,7 +66,7 @@ Before selecting map tiles, elevation data, and dependencies, verify their curre
 1. Establish the repository, configuration, GPX fixtures, map, and fixed polygon selection. Record provisional defaults and the chosen elevation provider.
 2. Prove the geometry pipeline with deterministic synthetic DEM fixtures: terrain, base, dimensions, and STL export. Synthetic fixtures are test data, not a production fallback.
 3. Integrate real DEM retrieval and verify projection, coverage, and route alignment.
-4. Add raised routes, then recessed routes; validate both as solids before polishing the preview.
+4. Add and validate raised routes as solids before polishing the preview. Recessed routes are out of scope.
 5. Finish Three.js preview, clear progress/error states, resource limits, and Docker startup documentation.
 6. Validate representative exports in the owner's slicer and conduct physical print checks. Revisit 3MF only after these pass.
 
@@ -74,6 +74,6 @@ Before selecting map tiles, elevation data, and dependencies, verify their curre
 
 Test geometry changes with flat and sloped DEMs, steep relief, absent elevation cells, multi-segment GPX, tight switchbacks, self-crossings, and polygon-edge crossings. Check bounding-box dimensions, base thickness, route feature dimensions, topology, and deterministic output. Keep provider tests separate so core tests run offline.
 
-Before declaring the MVP complete: upload real GPX, select the area, fetch real elevation, generate both route modes, inspect the preview, export STL, confirm millimeter dimensions and absence of repair warnings in the chosen slicer, and verify Docker startup from documented instructions. A physical test print is an owner validation step; report it as pending until evidence is supplied.
+Before declaring the MVP complete: upload real GPX, select the area, fetch real elevation, generate terrain-only and raised-route models, inspect the preview, export STL, confirm millimeter dimensions and absence of repair warnings in the chosen slicer, and verify Docker startup from documented instructions. A physical test print is an owner validation step; report it as pending until evidence is supplied.
 
 Run relevant tests, type checks, and production build for implementation changes. Do not invent passing results or claim slicer/print verification from a visual preview. Report what works, checks performed, limitations, and the next concrete step. Keep this file and the project scope synchronized when decisions change.
