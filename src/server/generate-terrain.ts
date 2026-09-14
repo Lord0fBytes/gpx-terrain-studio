@@ -21,12 +21,16 @@ export interface TerrainGenerationRequest extends DemSampleRequest {
 
 export interface TerrainGenerationResult {
   readonly stl: Uint8Array;
+  readonly terrainWidthMm: number;
   readonly printedWidthMm: number;
   readonly printedDepthMm: number;
   readonly triangleCount: number;
   readonly clippedRouteSegments: number;
   readonly omittedRouteSegments: number;
 }
+
+const RAISED_BORDER_WIDTH_MM = 6;
+const RAISED_BORDER_HEIGHT_MM = 5;
 
 export interface ElevationSampler {
   sampleGrid(request: DemSampleRequest): Promise<DemGrid>;
@@ -98,12 +102,15 @@ export async function generateTerrainStl(
       printScale.horizontalModelScaleMmPerM,
       request.verticalExaggeration
     ),
-    surfaceOffsetMm: routeOffset?.offsetAt
+    surfaceOffsetMm: routeOffset?.offsetAt,
+    raisedBorder: { widthMm: RAISED_BORDER_WIDTH_MM, heightAboveBaseMm: RAISED_BORDER_HEIGHT_MM }
   });
+  const outerWidthMm = printScale.printedWidthMm + RAISED_BORDER_WIDTH_MM * 2;
   return {
     stl: encodeBinaryStl(mesh),
-    printedWidthMm: printScale.printedWidthMm,
-    printedDepthMm: printScale.printedWidthMm * Math.sqrt(3) / 2,
+    terrainWidthMm: printScale.printedWidthMm,
+    printedWidthMm: outerWidthMm,
+    printedDepthMm: outerWidthMm * Math.sqrt(3) / 2,
     triangleCount: mesh.indices.length / 3,
     clippedRouteSegments: routeOffset?.clippedSegmentCount ?? 0,
     omittedRouteSegments: routeOffset?.omittedSegmentCount ?? 0

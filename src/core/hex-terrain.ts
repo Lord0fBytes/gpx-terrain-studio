@@ -2,6 +2,7 @@ import { assertPrintableSolid, type IndexedMesh, type Vec3 } from './mesh';
 import { regularFlatTopHexagon } from './hex-footprint';
 
 export interface HexTerrainInput {
+  /** Width of the terrain footprint before any exterior border is added. */
   readonly widthMm: number;
   readonly columns: number;
   readonly rows: number;
@@ -10,6 +11,12 @@ export interface HexTerrainInput {
   readonly baseThicknessMm: number;
   readonly elevationToModelMm: (elevationM: number) => number;
   readonly surfaceOffsetMm?: (point: Readonly<{ x: number; y: number }>) => number;
+  readonly raisedBorder?: Readonly<{
+    /** Amount added beyond every terrain extent; 6 mm makes a 100 mm terrain 112 mm overall. */
+    widthMm: number;
+    /** Absolute frame-top height above the bottom of the model. */
+    heightAboveBaseMm: number;
+  }>;
 }
 
 function finitePositive(value: number, label: string): void {
@@ -35,6 +42,10 @@ function sampleBilinear(input: HexTerrainInput, xMm: number, yMm: number, depthM
 export function buildHexTerrainSolid(input: HexTerrainInput): IndexedMesh {
   finitePositive(input.widthMm, 'widthMm');
   finitePositive(input.baseThicknessMm, 'baseThicknessMm');
+  if (input.raisedBorder) {
+    finitePositive(input.raisedBorder.widthMm, 'raisedBorder.widthMm');
+    finitePositive(input.raisedBorder.heightAboveBaseMm, 'raisedBorder.heightAboveBaseMm');
+  }
   if (!Number.isInteger(input.columns) || input.columns < 2) throw new Error('columns must be an integer of at least 2.');
   if (!Number.isInteger(input.rows) || input.rows < 2) throw new Error('rows must be an integer of at least 2.');
   if (input.elevationsM.length !== input.columns * input.rows || input.elevationsM.some((value) => !Number.isFinite(value))) {
@@ -86,12 +97,6 @@ export function buildHexTerrainSolid(input: HexTerrainInput): IndexedMesh {
     if (!Number.isFinite(offset) || offset < 0) throw new Error('surfaceOffsetMm must return finite non-negative offsets.');
     return { x: vertex.x, y: vertex.y, z: input.baseThicknessMm + vertex.elevationMm - minimumElevationMm + offset };
   });
-  const topTriangleIndices = [...indices];
-  const bottomOffset = positions.length;
-  positions.push(...vertices.map((vertex) => ({ x: vertex.x, y: vertex.y, z: 0 })));
-  for (let index = 0; index < topTriangleIndices.length; index += 3) {
-    indices.push(bottomOffset + topTriangleIndices[index], bottomOffset + topTriangleIndices[index + 2], bottomOffset + topTriangleIndices[index + 1]);
-  }
 
   const boundary: number[] = [];
   for (let side = 0; side < 6; side += 1) {
@@ -99,12 +104,74 @@ export function buildHexTerrainSolid(input: HexTerrainInput): IndexedMesh {
     const b = corners[(side + 1) % 6];
     for (let step = 0; step < subdivisions; step += 1) boundary.push(pointInSector(a, b, subdivisions - step, step));
   }
-  for (let index = 0; index < boundary.length; index += 1) {
-    const topA = boundary[index];
-    const topB = boundary[(index + 1) % boundary.length];
-    const bottomA = bottomOffset + topA;
-    const bottomB = bottomOffset + topB;
-    indices.push(topA, bottomB, topB, topA, bottomA, bottomB);
+  if (input.raisedBorder) {
+    const frameTopMm = input.baseThicknessMm + input.raisedBorder.heightAboveBaseMm;
+    const innerFrameBoundary = boundary.map((terrainIndex) => {
+      const terrainPoint = positions[terrainIndex]!;
+      if (Math.abs(terrainPoint.z - frameTopMm) < 1e-9) return terrainIndex;
+      const frameIndex = positions.length;
+      positions.push({ x: terrainPoint.x, y: terrainPoint.y, z: frameTopMm });
+      return frameIndex;
+    });
+    const outerCorners = regularFlatTopHexagon(input.widthMm + input.raisedBorder.widthMm * 2);
+    const outerBoundary: number[] = [];
+    for (let side = 0; side < 6; side += 1) {
+      const a = outerCorners[side]!;
+      const b = outerCorners[(side + 1) % 6]!;
+      for (let step = 0; step < subdivisions; step += 1) {
+        const index = positions.length;
+        positions.push({
+          x: (a.x * (subdivisions - step) + b.x * step) / subdivisions,
+          y: (a.y * (subdivisions - step) + b.y * step) / subdivisions,
+          z: frameTopMm
+        });
+        outerBoundary.push(index);
+      }
+    }
+
+    for (let index = 0; index < boundary.length; index += 1) {
+      const terrainA = boundary[index]!;
+      const terrainB = boundary[(index + 1) % boundary.length]!;
+      const frameA = innerFrameBoundary[index]!;
+      const frameB = innerFrameBoundary[(index + 1) % boundary.length]!;
+      const outerA = outerBoundary[index]!;
+      const outerB = outerBoundary[(index + 1) % boundary.length]!;
+      if (terrainA !== frameA && terrainB !== frameB) indices.push(terrainB, terrainA, frameA, terrainB, frameA, frameB);
+      else if (terrainA !== frameA) indices.push(terrainB, terrainA, frameA);
+      else if (terrainB !== frameB) indices.push(terrainB, terrainA, frameB);
+      indices.push(frameB, frameA, outerA, frameB, outerA, outerB);
+    }
+
+    const bottomCenter = positions.length;
+    positions.push({ x: 0, y: 0, z: 0 });
+    const bottomBoundary = outerBoundary.map((topIndex) => {
+      const point = positions[topIndex]!;
+      const index = positions.length;
+      positions.push({ x: point.x, y: point.y, z: 0 });
+      return index;
+    });
+    for (let index = 0; index < outerBoundary.length; index += 1) {
+      const topA = outerBoundary[index]!;
+      const topB = outerBoundary[(index + 1) % outerBoundary.length]!;
+      const bottomA = bottomBoundary[index]!;
+      const bottomB = bottomBoundary[(index + 1) % bottomBoundary.length]!;
+      indices.push(bottomCenter, bottomB, bottomA);
+      indices.push(topA, bottomB, topB, topA, bottomA, bottomB);
+    }
+  } else {
+    const topTriangleIndices = [...indices];
+    const bottomOffset = positions.length;
+    positions.push(...vertices.map((vertex) => ({ x: vertex.x, y: vertex.y, z: 0 })));
+    for (let index = 0; index < topTriangleIndices.length; index += 3) {
+      indices.push(bottomOffset + topTriangleIndices[index]!, bottomOffset + topTriangleIndices[index + 2]!, bottomOffset + topTriangleIndices[index + 1]!);
+    }
+    for (let index = 0; index < boundary.length; index += 1) {
+      const topA = boundary[index]!;
+      const topB = boundary[(index + 1) % boundary.length]!;
+      const bottomA = bottomOffset + topA;
+      const bottomB = bottomOffset + topB;
+      indices.push(topA, bottomB, topB, topA, bottomA, bottomB);
+    }
   }
 
   const mesh = { positions, indices };

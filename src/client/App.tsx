@@ -26,7 +26,7 @@ export function App() {
   const [includeRaisedRoute, setIncludeRaisedRoute] = useState(false);
   const [routeWidthMm, setRouteWidthMm] = useState('');
   const [routeHeightMm, setRouteHeightMm] = useState('');
-  const [exportMessage, setExportMessage] = useState('Enter the intended physical dimensions to generate a terrain-only STL.');
+  const [exportMessage, setExportMessage] = useState('Enter the intended physical dimensions to generate a terrain STL with its raised border.');
   const [exportIsError, setExportIsError] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const selection = summary && deriveRouteSelection(summary.segments, {
@@ -64,7 +64,7 @@ export function App() {
       verticalExaggeration: Number(verticalExaggeration)
     };
     if (Object.values(dimensions).some((value) => !Number.isFinite(value) || value <= 0)) {
-      setExportMessage('Printed width, base thickness, and vertical exaggeration must all be positive numbers.');
+      setExportMessage('Terrain width, base thickness, and vertical exaggeration must all be positive numbers.');
       setExportIsError(true);
       return;
     }
@@ -103,9 +103,10 @@ export function App() {
       link.click();
       URL.revokeObjectURL(downloadUrl);
       const depthMm = response.headers.get('x-model-depth-mm');
+      const modelWidthMm = response.headers.get('x-model-width-mm');
       const triangles = response.headers.get('x-triangle-count');
       const omittedRouteSegments = Number(response.headers.get('x-route-segments-omitted') ?? '0');
-      setExportMessage(`Downloaded ${includeRaisedRoute ? 'raised-route' : 'terrain-only'} STL: ${dimensions.printedWidthMm} mm wide${depthMm ? ` × ${Number(depthMm).toFixed(1)} mm deep` : ''}${triangles ? `, ${triangles} triangles` : ''}.${omittedRouteSegments > 0 ? ` ${omittedRouteSegments} route segment${omittedRouteSegments === 1 ? '' : 's'} fell outside the hexagon.` : ''}`);
+      setExportMessage(`Downloaded ${includeRaisedRoute ? 'raised-route' : 'terrain'} STL: ${dimensions.printedWidthMm} mm terrain width plus a 6 mm border on each side${modelWidthMm ? `; ${Number(modelWidthMm).toFixed(1)} mm overall` : ''}${depthMm ? ` × ${Number(depthMm).toFixed(1)} mm deep` : ''}${triangles ? `, ${triangles} triangles` : ''}.${omittedRouteSegments > 0 ? ` ${omittedRouteSegments} route segment${omittedRouteSegments === 1 ? '' : 's'} fell outside the hexagon.` : ''}`);
     } catch (error) {
       setExportMessage(error instanceof Error ? error.message : 'Unable to generate terrain.');
       setExportIsError(true);
@@ -122,7 +123,7 @@ export function App() {
         <p className="intro">
           A focused production tool for turning a route into a watertight terrain model.
         </p>
-        <p className="status">GPX import, route selection, and terrain-only STL export are ready to test.</p>
+        <p className="status">GPX import, route selection, framed terrain export, and optional raised routes are ready to test.</p>
       </section>
       <section className="upload" aria-labelledby="upload-title">
         <h2 id="upload-title">1. Validate GPX</h2>
@@ -145,9 +146,9 @@ export function App() {
             </section>
             <section className="export-section" aria-labelledby="export-title">
               <h2 id="export-title">3. Export terrain STL</h2>
-              <p className="map-help">This exports the watertight hexagonal terrain and flat base in millimeters. Raised or recessed route geometry is not included yet.</p>
+              <p className="map-help">The entered terrain width excludes the frame. Every export adds a 6 mm frame outside each side, with its top 5 mm above the configured base thickness. Optionally add the raised route; recessed routes are excluded.</p>
               <form className="export-form" onSubmit={exportTerrain}>
-                <label>Printed width (mm)<input value={printedWidthMm} onChange={(event) => setPrintedWidthMm(event.target.value)} inputMode="decimal" min="0.01" required step="any" type="number" /></label>
+                <label>Terrain width, excluding border (mm)<input value={printedWidthMm} onChange={(event) => setPrintedWidthMm(event.target.value)} inputMode="decimal" min="0.01" required step="any" type="number" /></label>
                 <label>Base thickness (mm)<input value={baseThicknessMm} onChange={(event) => setBaseThicknessMm(event.target.value)} inputMode="decimal" min="0.01" required step="any" type="number" /></label>
                 <label>Vertical exaggeration<input value={verticalExaggeration} onChange={(event) => setVerticalExaggeration(event.target.value)} inputMode="decimal" min="0.01" required step="any" type="number" /></label>
                 <label className="smoothing-option">

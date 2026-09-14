@@ -56,6 +56,30 @@ test('integrates raised route offsets into the same watertight terrain mesh', ()
   assert.equal(analyzeMesh(mesh).connectedComponents, 1);
 });
 
+test('adds a 6 mm border outside every terrain extent as part of the same watertight solid', () => {
+  const mesh = buildHexTerrainSolid({
+    widthMm: 40,
+    columns: 9,
+    rows: 9,
+    elevationsM: Array.from({ length: 81 }, () => 100),
+    baseThicknessMm: 3,
+    elevationToModelMm: (elevation) => elevation,
+    raisedBorder: { widthMm: 6, heightAboveBaseMm: 5 }
+  });
+  const bounds = meshBounds(mesh);
+  assert.equal(bounds.min.x, -26);
+  assert.equal(bounds.max.x, 26);
+  assert.ok(Math.abs(bounds.min.y + 13 * Math.sqrt(3)) < 1e-9);
+  assert.ok(Math.abs(bounds.max.y - 13 * Math.sqrt(3)) < 1e-9);
+  assert.equal(bounds.max.z, 8);
+  assert.ok(mesh.positions.some((point) => point.x === 20 && point.y === 0 && point.z === 3));
+  assert.ok(mesh.positions.some((point) => point.x === 26 && point.y === 0 && point.z === 8));
+  const analysis = analyzeMesh(mesh);
+  assert.equal(analysis.boundaryEdges, 0);
+  assert.equal(analysis.nonManifoldEdges, 0);
+  assert.equal(analysis.connectedComponents, 1);
+});
+
 test('uses the full limiting DEM grid edge for hex surface detail', () => {
   const mesh = buildHexTerrainSolid({
     widthMm: 40,
