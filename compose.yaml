@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        VITE_MAP_TILE_URL: ${VITE_MAP_TILE_URL:-}
+        VITE_MAP_TILE_ATTRIBUTION: ${VITE_MAP_TILE_ATTRIBUTION:-}
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      NODE_ENV: production
+      PORT: 8787
+    ports:
+      - "8787:8787"

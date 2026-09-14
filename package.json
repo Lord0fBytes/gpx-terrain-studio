@@ -10,8 +10,11 @@
     "dev": "concurrently -k \"npm:dev:api\" \"npm:dev:web\"",
     "dev:api": "node --env-file-if-exists=.env --import tsx --watch src/server/index.ts",
     "dev:web": "vite",
-    "build": "tsc --noEmit && vite build",
-    "start": "node --env-file-if-exists=.env --import tsx src/server/index.ts",
+    "build": "npm run typecheck && npm run build:web && npm run build:server",
+    "typecheck": "tsc --noEmit",
+    "build:web": "vite build",
+    "build:server": "vite build --ssr src/server/index.ts --outDir server-dist --emptyOutDir",
+    "start": "node server-dist/index.js",
     "test": "tsx --test src/server/index.test.ts src/server/generate-terrain.test.ts src/server/elevation/*.test.ts src/core/*.test.ts"
   },
   "dependencies": {
